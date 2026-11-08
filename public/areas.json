@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-06",
+  "updated": "2026-11-07",
   "modVersion": "0.2.0",
   "areas": [
     {
@@ -349,6 +349,108 @@
       "lon": 12.48293,
       "radiusKm": 15,
       "added": "2026-11-05"
+    },
+    {
+      "id": "green-bay-wi",
+      "name": "Green Bay, WI",
+      "region": "Wisconsin, United States",
+      "country": "United States",
+      "icao": "",
+      "cat": "city",
+      "noPhotogrammetry": false,
+      "status": "requested",
+      "votes": 0,
+      "by": "Community",
+      "lat": 44.51563,
+      "lon": -88.09253,
+      "radiusKm": 17.7,
+      "perimeter": [
+        [44.6462, -88.2199],
+        [44.587, -88.2206],
+        [44.3861, -88.2114],
+        [44.3862, -88.1577],
+        [44.3982, -88.1107],
+        [44.461, -88.0599],
+        [44.4487, -87.9569],
+        [44.4857, -87.9311],
+        [44.5318, -87.9353],
+        [44.5621, -88.0455],
+        [44.6491, -88.0448],
+        [44.6455, -88.2168]
+      ],
+      "added": "2026-11-06"
+    },
+    {
+      "id": "bilbao-spain",
+      "name": "Bilbao, Spain",
+      "region": "Basque Country, Spain",
+      "country": "Spain",
+      "icao": "",
+      "cat": "town",
+      "noPhotogrammetry": false,
+      "status": "requested",
+      "votes": 0,
+      "by": "Community",
+      "lat": 43.263,
+      "lon": -2.935,
+      "radiusKm": 10.6,
+      "added": "2026-11-07"
+    },
+    {
+      "id": "athens-greece",
+      "name": "Athens, Greece",
+      "region": "Attica, Greece",
+      "country": "Greece",
+      "icao": "",
+      "cat": "city",
+      "noPhotogrammetry": false,
+      "status": "requested",
+      "votes": 0,
+      "by": "Community",
+      "lat": 38.03295,
+      "lon": 23.74557,
+      "radiusKm": 15,
+      "added": "2026-11-07"
+    },
+    {
+      "id": "mainz-germany",
+      "name": "Mainz, Germany",
+      "region": "Rhineland-Palatinate, Germany",
+      "country": "Germany",
+      "icao": "",
+      "cat": "city",
+      "noPhotogrammetry": false,
+      "status": "requested",
+      "votes": 0,
+      "by": "Community",
+      "lat": 49.99952,
+      "lon": 8.27363,
+      "radiusKm": 13.7,
+      "added": "2026-11-07"
+    },
+    {
+      "id": "stockholm-sweden",
+      "name": "Stockholm, Sweden",
+      "region": "Stockholm County, Sweden",
+      "country": "Sweden",
+      "icao": "",
+      "cat": "city",
+      "noPhotogrammetry": false,
+      "status": "requested",
+      "votes": 0,
+      "by": "Community",
+      "lat": 59.30613,
+      "lon": 17.84912,
+      "radiusKm": 79.5,
+      "perimeter": [
+        [59.8117, 18.6108],
+        [59.8448, 17.5781],
+        [59.5009, 16.7871],
+        [58.916, 17.0068],
+        [58.7568, 17.9956],
+        [59.0066, 19.1162]
+      ],
+      "added": "2026-11-07"
     }
   ]
 }
