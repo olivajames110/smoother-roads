@@ -34,12 +34,18 @@ const toArea = (r: Row): Area => ({
   notes: r.notes,
   shape: r.points ? { type: "polygon", points: r.points } : { type: "circle", center: [r.lat, r.lon], radius: r.radius_m ?? 0 },
   comments: [],
+  request: true,
 });
 
 export async function fetchRequests() {
   const { data, error } = await sb.from("area_requests").select(COLUMNS).order("created_at").limit(5000);
   if (error) throw error;
   return ((data ?? []) as Row[]).map(toArea);
+}
+
+export async function deleteRequest(id: string) {
+  const { error } = await sb.from("area_requests").delete().eq("id", id);
+  if (error) throw error;
 }
 
 export async function addRequest(a: Area) {

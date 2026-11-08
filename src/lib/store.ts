@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { CONFIG } from "./config";
-import { addComment } from "./comments";
+import { addComment, amAdmin } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
 import { addRequest } from "./requests";
 import { setVote } from "./votes";
@@ -25,7 +25,7 @@ export type PanelMode = "detail" | "submit" | null;
 
 const newDraft = (): Draft => ({ type: "radius", center: null, radius: 3000, points: [], closed: false });
 const newForm = (): SubmitForm => ({ name: "", region: "", icao: "", notes: "", cat: "city" });
-const newComment = (): CommentDraft => ({ type: "feedback", text: "", image: null, pin: null });
+const newComment = (): CommentDraft => ({ type: "feedback", text: "", image: null, pin: null, replyTo: null });
 
 let demoMode = false;
 let flyNonce = 0;
@@ -48,6 +48,7 @@ const persist = (areas: Area[]) => {
 interface Store {
   areas: Area[];
   loaded: boolean;
+  admin: boolean;
   view: View;
   hidden: Set<Status>;
   group: GroupBy;
@@ -75,6 +76,7 @@ interface Store {
   fly: FlyRequest | null;
 
   init: (demo?: Area[]) => Promise<void>;
+  adminAction: (job: () => Promise<unknown>, done: string) => Promise<void>;
   patch: (patch: Partial<Store>) => void;
   setForm: (patch: Partial<SubmitForm>) => void;
   setComment: (patch: Partial<CommentDraft>) => void;
@@ -127,6 +129,7 @@ export const useStore = create<Store>((set, get) => {
   return {
     areas: [],
     loaded: false,
+    admin: false,
     view: "map",
     hidden: new Set(),
     group: "country",
@@ -155,7 +158,20 @@ export const useStore = create<Store>((set, get) => {
 
     async init(demo) {
       demoMode = !!demo;
-      set({ areas: demo ?? (await loadAreas()), loaded: true });
+      // Signed in on ?admin: admin options show in the panel, and hidden items stay listed
+      const admin = !demo && CONFIG.database && (await amAdmin().catch(() => false));
+      set({ admin, areas: demo ?? (await loadAreas(admin)), loaded: true });
+    },
+
+    async adminAction(job, done) {
+      try {
+        await job();
+        const admin = await amAdmin().catch(() => false);
+        set({ admin, areas: await loadAreas(admin) });
+        get().showToast(done);
+      } catch (e) {
+        get().showToast((e as Error).message || "That didn't work", true);
+      }
     },
 
     patch: (patch) => set(patch),
@@ -229,10 +245,10 @@ export const useStore = create<Store>((set, get) => {
       const text = comment.text.trim();
       if (!text || !selectedId || posting) return;
       if (CONFIG.database && !demoMode) {
-        const author = commenter.trim().slice(0, 40) || "Anonymous";
+        const author = commenter.trim().slice(0, 40) || (get().admin ? "Jim" : "Anonymous");
         set({ posting: true });
         try {
-          const saved = await addComment(selectedId, author, comment.type, text, comment.pin);
+          const saved = await addComment(selectedId, author, comment.type, text, comment.pin, comment.replyTo ?? undefined);
           set({
             areas: get().areas.map((a) => (a.id === selectedId ? { ...a, comments: [...a.comments, saved] } : a)),
             comment: newComment(),

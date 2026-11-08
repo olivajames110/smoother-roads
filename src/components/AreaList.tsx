@@ -60,7 +60,7 @@ function AreaItem({ area: a }: { area: Area }) {
 
   return (
     <button
-      className={"item" + (selected ? " sel" : "") + (hovered ? " hl" : "")}
+      className={"item" + (selected ? " sel" : "") + (hovered ? " hl" : "") + (a.hidden ? " off" : "")}
       onClick={() => openDetail(a.id)}
       onMouseEnter={() => patch({ hoveredId: a.id })}
       onMouseLeave={() => patch({ hoveredId: null })}

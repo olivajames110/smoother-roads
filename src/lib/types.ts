@@ -50,6 +50,7 @@ export interface Area {
   version?: string;
   local?: boolean; // Only stored in this browser until the database exists
   hidden?: boolean; // Hidden from visitors from the admin page
+  request?: boolean; // Sent through the site and stored in the database
 }
 
 export interface Draft {
@@ -73,6 +74,7 @@ export interface CommentDraft {
   text: string;
   image: string | null;
   pin: LatLng | null;
+  replyTo: string | null; // Admin replies: the comment being answered
 }
 
 export interface FlyRequest {

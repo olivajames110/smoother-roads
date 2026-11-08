@@ -1,10 +1,12 @@
 import { useRef } from "react";
+import { setHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageShort } from "../lib/geo";
 import { CATS, STATUS } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
+import { AdminMenu } from "./AdminMenu";
 import { Icon } from "./Icon";
 
 const COMMENT_TYPES: Record<CommentType, string> = { feedback: "Feedback", issue: "Issue", question: "Question" };
@@ -12,8 +14,11 @@ const COMMENT_TYPES: Record<CommentType, string> = { feedback: "Feedback", issue
 function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
   const flyToPoint = useStore((s) => s.flyToPoint);
+  const admin = useStore((s) => s.admin);
+  const adminAction = useStore((s) => s.adminAction);
+  const setComment = useStore((s) => s.setComment);
   return (
-    <div className="cmt">
+    <div className={"cmt" + (c.hidden ? " off" : "")}>
       <div className="avatar" style={{ background: hue(c.author) }}>
         {initials(c.author)}
       </div>
@@ -23,6 +28,7 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
           {c.dev && <span className="dev">DEV</span>}
           <span className={"tag t-" + c.type}>{COMMENT_TYPES[c.type]}</span>
           <span className="time">{ago(c.date)}</span>
+          {c.hidden && <span className="tag t-hidden">Hidden</span>}
         </div>
         {parent && (
           <div className="cmt-reply">
@@ -37,6 +43,19 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
             View location on map
           </button>
         )}
+        {admin && (
+          <div className="cmt-admin">
+            <button className="link" onClick={() => setComment({ replyTo: c.id })}>
+              Reply
+            </button>
+            <button
+              className="link"
+              onClick={() => adminAction(() => setHidden(c.id, !c.hidden), c.hidden ? "Comment shown" : "Comment hidden")}
+            >
+              {c.hidden ? "Show" : "Hide"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -50,6 +69,7 @@ function Compose() {
   const postComment = useStore((s) => s.postComment);
   const commenter = useStore((s) => s.commenter);
   const posting = useStore((s) => s.posting);
+  const replyingTo = useStore((s) => s.areas.find((a) => a.id === s.selectedId)?.comments.find((c) => c.id === s.comment.replyTo));
   const file = useRef<HTMLInputElement>(null);
 
   const attach = (f?: File) => {
@@ -88,6 +108,15 @@ function Compose() {
         onChange={(e) => setComment({ text: e.target.value })}
       />
       <div className="attach">
+        {replyingTo && (
+          <div className="pinchip">
+            <Icon name="cmt" size={14} />
+            Replying to {replyingTo.author}
+            <button className="xbtn" title="Cancel reply" onClick={() => setComment({ replyTo: null })}>
+              <Icon name="x" size={11} weight={3} />
+            </button>
+          </div>
+        )}
         {comment.image && (
           <div className="thumb">
             <img src={comment.image} alt="Attachment preview" />
@@ -235,6 +264,7 @@ export function DetailPanel({ area: a }: { area: Area }) {
   const closePanel = useStore((s) => s.closePanel);
   const toggleVote = useStore((s) => s.toggleVote);
   const zoomTo = useStore((s) => s.zoomTo);
+  const admin = useStore((s) => s.admin);
   const status = STATUS[a.status];
   const voted = CONFIG.votes && a.voted;
 
@@ -265,13 +295,17 @@ export function DetailPanel({ area: a }: { area: Area }) {
           <div className="eyebrow">
             <span className={"badge s-" + a.status}>{status.label}</span>
             <span className="badge cat-b">{CATS[a.cat].label}</span>
+            {a.hidden && <span className="badge cat-b">Hidden</span>}
           </div>
           <h2>{a.name}</h2>
           <div className="sub">{[a.region, a.icao].filter(Boolean).join(" · ")}</div>
         </div>
-        <button className="ibtn" title="Close" onClick={closePanel}>
-          <Icon name="x" size={18} />
-        </button>
+        <div className="head-btns">
+          {admin && <AdminMenu area={a} />}
+          <button className="ibtn" title="Close" onClick={closePanel}>
+            <Icon name="x" size={18} />
+          </button>
+        </div>
       </div>
 
       <div className={"panel-body" + (CONFIG.database ? "" : " short")}>
