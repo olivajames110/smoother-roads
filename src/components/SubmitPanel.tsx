@@ -87,6 +87,7 @@ export function SubmitPanel() {
   const locate = useStore((s) => s.locate);
   const closePanel = useStore((s) => s.closePanel);
   const submitArea = useStore((s) => s.submitArea);
+  const posting = useStore((s) => s.posting);
 
   const shape = shapeFromDraft(draft);
   const covered = shape && coveredBy(areas, centerOf(shape));
@@ -206,8 +207,8 @@ export function SubmitPanel() {
 
       <div className="panel-foot">
         <button className="btn ghost" onClick={closePanel}>Cancel</button>
-        <button className="btn cyan" disabled={!shape || !form.name.trim()} onClick={submitArea}>
-          Request Area
+        <button className="btn cyan" disabled={!shape || !form.name.trim() || posting} onClick={submitArea}>
+          {posting ? "Sending…" : "Request Area"}
         </button>
       </div>
     </>

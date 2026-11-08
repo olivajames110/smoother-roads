@@ -3,6 +3,7 @@ import { centerOf, enclosingRadiusKm } from "./geo";
 import { CATS } from "./icons";
 import type { Area, AreaComment, Cat, LatLng, Status } from "./types";
 import { fetchComments, fetchStatuses } from "./comments";
+import { fetchRequests } from "./requests";
 import { fetchVotes } from "./votes";
 
 const STORAGE_KEY = "smoother-roads:v2";
@@ -96,6 +97,11 @@ export async function loadAreas(withHidden = false): Promise<Area[]> {
     published = (data.areas ?? []).filter((a) => isFinite(a.lat) && isFinite(a.lon) && a.radiusKm > 0).map(toArea);
   } catch {
     // Still show anything saved in this browser
+  }
+
+  if (CONFIG.database) {
+    // Requests sent through the site; ones copied into areas.json by hand stay there too
+    published = [...published, ...(await fetchRequests().catch(() => []))];
   }
 
   const saved = readSaved();

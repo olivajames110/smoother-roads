@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { CONFIG } from "./config";
 import { addComment } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
+import { addRequest } from "./requests";
 import { setVote } from "./votes";
 import { countryOf, norm } from "./format";
 import { boundsOf, centerOf, contains, issueCount, shapeFromDraft } from "./geo";
@@ -365,10 +366,10 @@ export const useStore = create<Store>((set, get) => {
     },
 
     async submitArea() {
-      const { draft, form, areas } = get();
+      const { draft, form, areas, posting } = get();
       const shape = shapeFromDraft(draft);
       const name = form.name.trim();
-      if (!shape || !name) return;
+      if (!shape || !name || posting) return;
       const region = form.region.trim();
       const area: Area = {
         id: crypto.randomUUID(),
@@ -387,6 +388,26 @@ export const useStore = create<Store>((set, get) => {
         comments: [],
         local: true,
       };
+      if (CONFIG.database && !demoMode) {
+        set({ posting: true });
+        try {
+          const saved = await addRequest(area);
+          set({ areas: [saved, ...get().areas], draft: newDraft(), form: newForm() });
+          get().openDetail(saved.id);
+          get().showToast("Area requested. Thanks!");
+          sendRequest(saved); // A copy for the Google Form's spreadsheet
+        } catch (e) {
+          get().showToast(
+            String((e as Error).message).includes("rate_limited")
+              ? "You've sent a lot of requests. Please try again later."
+              : "Couldn't send your request. Please try again.",
+            true,
+          );
+        } finally {
+          set({ posting: false });
+        }
+        return;
+      }
       const next = [area, ...areas];
       set({ areas: next, draft: newDraft(), form: newForm() });
       persist(next);
