@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { CONFIG } from "../lib/config";
 import { fmtN, norm } from "../lib/format";
-import { STATUS } from "../lib/icons";
+import { STATUS, STATUS_NOTE } from "../lib/icons";
 import { SORTS, useStore } from "../lib/store";
 import type { Area, GroupBy, Status } from "../lib/types";
 import { useVisible } from "../lib/useVisible";
@@ -15,7 +15,7 @@ interface Group {
   items: Area[];
 }
 
-const STATUS_ORDER: Status[] = ["requested", "progress", "released"];
+const STATUS_ORDER: Status[] = ["requested", "progress", "released", "unable", "alternative"];
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const byName = (a: Area, b: Area) => a.name.localeCompare(b.name);
@@ -68,7 +68,7 @@ function AreaItem({ area: a }: { area: Area }) {
       <HoverTip
         className="sdot item-dot"
         label={status.label}
-        tip={status.label}
+        tip={STATUS_NOTE[a.status] ?? status.label}
         place="above"
         style={{ background: status.color }}
       />

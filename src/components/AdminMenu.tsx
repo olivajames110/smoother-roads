@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { setRegionHidden, setStatus, signOut } from "../lib/comments";
+import { setNoPhotogrammetry, setRegionHidden, setStatus, signOut } from "../lib/comments";
 import { STATUS } from "../lib/icons";
 import { deleteRequest } from "../lib/requests";
 import { useStore } from "../lib/store";
@@ -60,6 +60,23 @@ export function AdminMenu({ area: a }: { area: Area }) {
             </button>
           ))}
           <div className="pop-sep" />
+          <button
+            role="menuitemcheckbox"
+            aria-checked={!!a.noPhotogrammetry}
+            className="pop-item"
+            onClick={() =>
+              run(
+                () => setNoPhotogrammetry(a.id, !a.noPhotogrammetry),
+                a.noPhotogrammetry ? "Marked as a photogrammetry zone" : "Marked as not a photogrammetry zone",
+              )
+            }
+          >
+            <span className="no-pg">
+              <Icon name="alert" size={15} />
+            </span>
+            Not a photogrammetry zone
+            {a.noPhotogrammetry && <Icon name="check" size={15} weight={2.4} />}
+          </button>
           <button
             role="menuitem"
             className="pop-item"

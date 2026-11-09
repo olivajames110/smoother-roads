@@ -22,4 +22,11 @@ export const STATUS = {
   requested:{label:'Requested',color:'#7c3aed',tint:'#f3eefe',ink:'#6d28d9'},
   progress:{label:'In progress',color:'#d97706',tint:'#fef3e2',ink:'#b45309'},
   released:{label:'Released',color:'#16a34a',tint:'#e7f6ec',ink:'#15803d'},
+  unable:{label:"Sorry, tried but unable :(",color:'#dc2626',tint:'#fdecec',ink:'#b42318'},
+  alternative:{label:"Unable, but better alternative available",color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490'},
+};
+// Shown in the area panel and the list tooltip for statuses that need explaining
+export const STATUS_NOTE: Partial<Record<keyof typeof STATUS, string>> = {
+  unable: "I have tried, but unfortunately I can't cover this one.",
+  alternative: "I wasn't able to cover this one, but there's a better alternative already available.",
 };

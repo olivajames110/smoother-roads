@@ -1,6 +1,6 @@
 export type LatLng = [number, number];
 export type Cat = "city" | "town" | "airport" | "mountain" | "coastal" | "race" | "island";
-export type Status = "requested" | "progress" | "released";
+export type Status = "requested" | "progress" | "released" | "unable" | "alternative";
 export type CommentType = "feedback" | "issue" | "question";
 export type GroupBy = "country" | "az" | "votes" | "new" | "status";
 export type SortBy = "votes" | "new" | "issues";

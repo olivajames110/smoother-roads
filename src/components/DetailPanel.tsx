@@ -3,7 +3,7 @@ import { setHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageShort } from "../lib/geo";
-import { CATS, STATUS } from "../lib/icons";
+import { CATS, STATUS, STATUS_NOTE } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
 import { AdminMenu } from "./AdminMenu";
@@ -309,6 +309,11 @@ export function DetailPanel({ area: a }: { area: Area }) {
       </div>
 
       <div className={"panel-body" + (CONFIG.database ? "" : " short")}>
+        {STATUS_NOTE[a.status] && (
+          <div className="status-note" style={{ background: status.tint, color: status.ink }}>
+            {STATUS_NOTE[a.status]}
+          </div>
+        )}
         <div className="stats">
           <div className="stat">
             <div className="k">Coverage</div>

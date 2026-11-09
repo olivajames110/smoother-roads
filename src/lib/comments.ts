@@ -39,11 +39,22 @@ export async function fetchComments() {
   return byArea;
 }
 
+export interface AreaOverride {
+  status: Status | null;
+  hidden: boolean;
+  noPhotogrammetry: boolean | null; // null keeps the value from areas.json
+}
+
 export async function fetchStatuses() {
-  const { data, error } = await sb.from("area_status").select("area_id, status, hidden");
+  let { data, error } = await sb.from("area_status").select("area_id, status, hidden, no_photogrammetry");
+  // Before 008_photogrammetry_toggle.sql runs the column is missing; keep statuses and hiding working
+  if (error) ({ data, error } = await sb.from("area_status").select("area_id, status, hidden"));
   if (error) throw error;
-  return new Map(
-    (data ?? []).map((r) => [r.area_id as string, { status: r.status as Status | null, hidden: r.hidden as boolean }]),
+  return new Map<string, AreaOverride>(
+    (data ?? []).map((r) => [
+      r.area_id as string,
+      { status: r.status as Status | null, hidden: r.hidden as boolean, noPhotogrammetry: (r.no_photogrammetry ?? null) as boolean | null },
+    ]),
   );
 }
 
@@ -85,6 +96,13 @@ export async function setStatus(areaId: string, status: Status) {
 
 export async function setRegionHidden(areaId: string, hidden: boolean) {
   const { error } = await sb.from("area_status").upsert({ area_id: areaId, hidden, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+export async function setNoPhotogrammetry(areaId: string, value: boolean) {
+  const { error } = await sb
+    .from("area_status")
+    .upsert({ area_id: areaId, no_photogrammetry: value, updated_at: new Date().toISOString() });
   if (error) throw error;
 }
 

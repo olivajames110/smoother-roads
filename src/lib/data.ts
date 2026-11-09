@@ -2,7 +2,7 @@ import { CONFIG } from "./config";
 import { centerOf, enclosingRadiusKm } from "./geo";
 import { CATS } from "./icons";
 import type { Area, AreaComment, Cat, LatLng, Status } from "./types";
-import { fetchComments, fetchStatuses } from "./comments";
+import { fetchComments, fetchStatuses, type AreaOverride } from "./comments";
 import { fetchRequests } from "./requests";
 import { fetchVotes } from "./votes";
 
@@ -116,13 +116,14 @@ export async function loadAreas(withHidden = false): Promise<Area[]> {
   if (CONFIG.database) {
     const [comments, statuses] = await Promise.all([
       fetchComments().catch(() => new Map<string, AreaComment[]>()),
-      fetchStatuses().catch(() => new Map<string, { status: Status | null; hidden: boolean }>()),
+      fetchStatuses().catch(() => new Map<string, AreaOverride>()),
     ]);
     published = published
       .map((a) => ({
         ...a,
         status: statuses.get(a.id)?.status ?? a.status,
         hidden: statuses.get(a.id)?.hidden,
+        noPhotogrammetry: statuses.get(a.id)?.noPhotogrammetry ?? a.noPhotogrammetry,
         comments: (comments.get(a.id) ?? []).filter((c) => withHidden || !c.hidden),
       }))
       .filter((a) => withHidden || !a.hidden);
