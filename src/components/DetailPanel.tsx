@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { setHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
@@ -10,6 +10,26 @@ import { AdminMenu } from "./AdminMenu";
 import { Icon } from "./Icon";
 
 const COMMENT_TYPES: Record<CommentType, string> = { feedback: "Feedback", issue: "Issue", question: "Question" };
+
+const URL_RE = /https?:\/\/[^\s<>"]+/g;
+
+// Only for admin comments: the database sets dev, so visitors can't make their links clickable
+function withLinks(text: string) {
+  const parts: ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(URL_RE)) {
+    const url = m[0].replace(/[.,!?;:)\]'"]+$/, "");
+    parts.push(text.slice(last, m.index));
+    parts.push(
+      <a key={m.index} href={url} target="_blank" rel="noopener">
+        {url}
+      </a>,
+    );
+    last = m.index + url.length;
+  }
+  parts.push(text.slice(last));
+  return parts;
+}
 
 function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
@@ -35,7 +55,7 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
             Replying to <strong>{parent.author}</strong>: {parent.text}
           </div>
         )}
-        <p>{c.text}</p>
+        <p>{c.dev ? withLinks(c.text) : c.text}</p>
         {c.image && <img className="cmt-img" src={c.image} alt="Attached screenshot" onClick={() => patch({ lightbox: c.image })} />}
         {c.pin && (
           <button className="link" onClick={() => flyToPoint(c.pin!)}>
