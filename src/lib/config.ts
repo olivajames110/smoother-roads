@@ -18,6 +18,8 @@ export const CONFIG = {
   turnstileSiteKey: "0x4AAAAAAF21Ko7dIZpv-zKT",
   // flightsim.to page for the mod
   downloadUrl: "https://flightsim.to/addon/118361/smoother-roads",
+  // flightsim.to page for Street GPS, the companion satnav mod
+  gpsUrl: "https://flightsim.to/addon/118813/smoother-roads-street-gps",
   // Requests still go to the Google Form until the database is set up
   formUrl: "https://docs.google.com/forms/d/e/1FAIpQLScVRxjvCpeIfGorNrgSnyEDUzc5pUqHID3kDfYGQ5CKOJtYPw/viewform",
   formFields: {

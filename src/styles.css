@@ -475,6 +475,21 @@ tbody tr:hover{background:var(--soft)}
 .notes + .by{margin-top:8px}
 .panel.open ~ .map-hint{left:calc((100% - 464px) / 2)}
 .panel.open ~ .fab-submit{display:none}
+
+/* flightsim.to links in the sidebar: both mods side by side */
+.get-links{display:flex;flex-direction:column;gap:6px}
+.get-row{display:flex;flex-wrap:wrap;gap:8px}
+.get-link{flex:none;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 11px 0 6px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--tx);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;transition:border-color .15s,background .15s}
+.get-link:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.gl-name{white-space:nowrap}
+.gl-dl{flex:none;display:flex;margin-left:6px;color:var(--faint);transition:color .15s}
+.get-link:hover .gl-dl{color:var(--accent)}
+.gl-ico{flex:none;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent)}
+
+/* the admin's DEV bar floats at the bottom right of the map (hidden under an open panel) */
+.dev-float{position:absolute;right:14px;bottom:22px;z-index:1100;box-shadow:var(--shadow-lg)}
+.panel.open ~ .dev-float{display:none}
+@container app (max-width: 860px){ .dev-float{right:auto;left:14px;bottom:84px} }
 @container app (max-width: 860px){
   .panel.open ~ .map-hint{left:50%}
   .soon{flex:none;min-height:0;height:64px}

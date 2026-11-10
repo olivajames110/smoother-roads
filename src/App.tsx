@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { signOut } from "./lib/comments";
 import { CONFIG } from "./lib/config";
 import { Icon } from "./components/Icon";
 import { Leaderboard } from "./components/Leaderboard";
@@ -15,6 +16,8 @@ export function App() {
   const sidebarCollapsed = useStore((s) => s.sidebarCollapsed);
   const patch = useStore((s) => s.patch);
   const openSubmit = useStore((s) => s.openSubmit);
+  const admin = useStore((s) => s.admin);
+  const adminAction = useStore((s) => s.adminAction);
 
   useEffect(() => {
     const { init } = useStore.getState();
@@ -56,6 +59,14 @@ export function App() {
               <button className="fab fab-submit" title="Request Area" onClick={openSubmit}>
                 <Icon d='<path d="M12 5v14M5 12h14"/>' size={16} weight={2.6} />
               </button>
+              {admin && (
+                <div className="dev-bar dev-float">
+                  <span className="dev">DEV</span>
+                  <span className="grow">Signed in as the dev</span>
+                  <a href={import.meta.env.BASE_URL + "?admin"}>Admin page</a>
+                  <button onClick={() => adminAction(signOut, "Signed out")}>Sign out</button>
+                </div>
+              )}
               {CONFIG.leaderboard && <Leaderboard />}
             </div>
           </section>

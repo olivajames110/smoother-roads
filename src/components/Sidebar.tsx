@@ -1,5 +1,4 @@
 import logo from "../assets/logo.jpg";
-import { signOut } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { useStore } from "../lib/store";
 import { AreaList } from "./AreaList";
@@ -12,8 +11,6 @@ export function Sidebar() {
   const setView = useStore((s) => s.setView);
   const openSubmit = useStore((s) => s.openSubmit);
   const collapsed = useStore((s) => s.sidebarCollapsed);
-  const admin = useStore((s) => s.admin);
-  const adminAction = useStore((s) => s.adminAction);
   const patch = useStore((s) => s.patch);
 
   return (
@@ -31,19 +28,6 @@ export function Sidebar() {
               <span className="wm-2">Roads</span>
             </div>
             <div className="sb-actions">
-              {CONFIG.downloadUrl && (
-                <HoverTip className="ibtn-tip" tip="Get the mod on flightsim.to" place="below">
-                  <a
-                    className="ibtn"
-                    href={CONFIG.downloadUrl}
-                    target="_blank"
-                    rel="noopener"
-                    aria-label="Get the mod on flightsim.to"
-                  >
-                    <Icon d='<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>' size={18} />
-                  </a>
-                </HoverTip>
-              )}
               <HoverTip
                 className="ibtn-tip sb-toggle"
                 tip={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -60,12 +44,34 @@ export function Sidebar() {
               </HoverTip>
             </div>
           </div>
-          {admin && (
-            <div className="dev-bar">
-              <span className="dev">DEV</span>
-              <span className="grow">Signed in as the dev</span>
-              <a href={import.meta.env.BASE_URL + "?admin"}>Admin page</a>
-              <button onClick={() => adminAction(signOut, "Signed out")}>Sign out</button>
+          {(CONFIG.downloadUrl || CONFIG.gpsUrl) && (
+            <div className="get-links">
+              <div className="get-row">
+                {CONFIG.downloadUrl && (
+                  <a className="get-link" href={CONFIG.downloadUrl} target="_blank" rel="noopener"
+                     title="Smoother Roads on flightsim.to">
+                    <span className="gl-ico">
+                      <Icon d='<path d="M4 21 9 3M20 21 15 3M12 5v2.5M12 10.5V13M12 16v3"/>' size={15} weight={2.2} />
+                    </span>
+                    <span className="gl-name">Smoother Roads</span>
+                    <span className="gl-dl">
+                      <Icon d='<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>' size={14} weight={2.2} />
+                    </span>
+                  </a>
+                )}
+                {CONFIG.gpsUrl && (
+                  <a className="get-link" href={CONFIG.gpsUrl} target="_blank" rel="noopener"
+                     title="Street GPS on flightsim.to">
+                    <span className="gl-ico">
+                      <Icon d='<path d="M3 11 21 3l-8 18-2-8z"/>' size={15} weight={2.2} />
+                    </span>
+                    <span className="gl-name">Street GPS</span>
+                    <span className="gl-dl">
+                      <Icon d='<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>' size={14} weight={2.2} />
+                    </span>
+                  </a>
+                )}
+              </div>
             </div>
           )}
           <SearchInput placeholder="Search by name, location…" />
