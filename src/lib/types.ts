@@ -23,6 +23,18 @@ export interface AreaComment {
   replyTo?: string; // The comment this one answers
 }
 
+export interface AreaPhoto {
+  id: string;
+  path: string; // In the storage bucket
+  url: string;
+  author: string;
+  dev: boolean;
+  width: number;
+  height: number;
+  approved: boolean; // Waiting photos only reach the admin
+  date: number;
+}
+
 export interface ProblemSpot {
   pin: LatLng;
   note: string;
@@ -45,6 +57,7 @@ export interface Area {
   notes: string;
   shape: Shape;
   comments: AreaComment[];
+  photos?: AreaPhoto[]; // In display order
   spots?: ProblemSpot[];
   packageName?: string;
   version?: string;

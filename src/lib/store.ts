@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { CONFIG } from "./config";
 import { addComment, amAdmin } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
+import { reorderPhotos, uploadPhoto } from "./photos";
 import { addRequest } from "./requests";
 import { setVote } from "./votes";
 import { countryOf, norm } from "./format";
@@ -71,6 +72,8 @@ interface Store {
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
   lightbox: string | null;
+  gallery: { areaId: string; index: number; pending: boolean } | null; // The full-screen photo viewer
+  uploading: { done: number; total: number } | null;
   toast: string | null;
   toastFailed: boolean;
   fly: FlyRequest | null;
@@ -90,6 +93,8 @@ interface Store {
   flyToPoint: (p: LatLng, zoom?: number) => void;
   toggleVote: (id: string) => void;
   postComment: () => Promise<void>;
+  uploadPhotos: (files: File[]) => Promise<void>;
+  movePhoto: (areaId: string, from: number, to: number) => Promise<void>;
   openSubmit: () => void;
   requestAt: (p: LatLng, zoom: number) => void;
   setDrawType: (t: Draft["type"]) => void;
@@ -152,6 +157,8 @@ export const useStore = create<Store>((set, get) => {
     sidebarOpen: false,
     sidebarCollapsed: false,
     lightbox: null,
+    gallery: null,
+    uploading: null,
     toast: null,
     toastFailed: false,
     fly: null,
@@ -286,6 +293,58 @@ export const useStore = create<Store>((set, get) => {
       set({ areas: next, comment: newComment(), pinMode: false });
       persist(next);
       get().showToast("Comment posted");
+    },
+
+    async uploadPhotos(files) {
+      const { selectedId, uploading, commenter, admin } = get();
+      if (!selectedId || uploading || !files.length) return;
+      if (demoMode || !CONFIG.database) {
+        get().showToast("Photo uploads aren't available here.", true);
+        return;
+      }
+      const author = commenter.trim().slice(0, 40) || (admin ? "Jim" : "Anonymous");
+      let sent = 0;
+      let failure = "";
+      set({ uploading: { done: 0, total: files.length } });
+      for (const file of files) {
+        try {
+          await uploadPhoto(selectedId, file, author);
+          sent++;
+        } catch (e) {
+          const msg = String((e as Error).message);
+          failure = msg.includes("not_image")
+            ? "That file isn't an image the browser can read."
+            : msg.includes("rate_limited") || msg.toLowerCase().includes("row-level security")
+              ? "You've uploaded a lot of photos. Please try again later."
+              : "Couldn't upload your photo. Please try again.";
+          if (!msg.includes("not_image")) break; // Limits and outages fail the rest too
+        }
+        set({ uploading: { done: sent, total: files.length } });
+      }
+      set({ uploading: null });
+      if (sent && admin) set({ areas: await loadAreas(true) });
+      if (failure) get().showToast(failure, true);
+      else if (admin) get().showToast(sent === 1 ? "Photo added" : `${sent} photos added`);
+      else get().showToast(sent === 1 ? "Thanks! Your photo will show once it's approved." : "Thanks! Your photos will show once they're approved.");
+    },
+
+    // The admin's drag and drop: shown right away, put back if the database refuses it
+    async movePhoto(areaId, from, to) {
+      const area = get().areas.find((a) => a.id === areaId);
+      if (!area?.photos || from === to) return;
+      const shown = area.photos.filter((p) => p.approved);
+      const waiting = area.photos.filter((p) => !p.approved);
+      const [moved] = shown.splice(from, 1);
+      if (!moved) return;
+      shown.splice(to, 0, moved);
+      const photos = [...shown, ...waiting];
+      set({ areas: get().areas.map((a) => (a.id === areaId ? { ...a, photos } : a)) });
+      try {
+        await reorderPhotos(areaId, photos.map((p) => p.id));
+      } catch {
+        get().showToast("Couldn't save the new order", true);
+        set({ areas: await loadAreas(get().admin) });
+      }
     },
 
     openSubmit: () =>

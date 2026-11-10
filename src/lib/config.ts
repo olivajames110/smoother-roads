@@ -7,6 +7,8 @@ export const CONFIG = {
   database: true,
   // Screenshot uploads on comments: turn on once approval is built
   screenshots: false,
+  // Photo galleries on areas (needs supabase/009_area_photos.sql)
+  photos: true,
   // Shown under the comment box for removal requests
   contactEmail: "olivajames110@gmail.com",
   supabase: {

@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
-import { addComment, amAdmin, setHidden, setRegionHidden, setStatus, signIn, signOut } from "../lib/comments";
+import {
+  addComment,
+  amAdmin,
+  setHidden,
+  setNoPhotogrammetry,
+  setRegionHidden,
+  setStatus,
+  signIn,
+  signOut,
+} from "../lib/comments";
 import { loadAreas } from "../lib/data";
 import { ago } from "../lib/format";
 import { STATUS } from "../lib/icons";
 import type { Area, AreaComment, Status } from "../lib/types";
+import { withLinks } from "./LinkedText";
 
 function Reply({ area, to, onDone }: { area: Area; to: string; onDone: () => void }) {
   const [text, setText] = useState("");
@@ -127,7 +137,7 @@ export function Admin() {
               {c.hidden ? "Show" : "Hide"}
             </button>
           </div>
-          <p>{c.text}</p>
+          <p>{c.dev ? withLinks(c.text) : c.text}</p>
           <Reply area={a} to={c.id} onDone={refresh} />
         </div>
       ))}
@@ -153,6 +163,14 @@ export function Admin() {
                 </option>
               ))}
             </select>
+            <label className="admin-check">
+              <input
+                type="checkbox"
+                checked={!!a.noPhotogrammetry}
+                onChange={() => run(setNoPhotogrammetry(a.id, !a.noPhotogrammetry))}
+              />
+              Not photogrammetry
+            </label>
             <button className="btn sm" onClick={() => run(setRegionHidden(a.id, !a.hidden))}>
               {a.hidden ? "Show" : "Hide"}
             </button>

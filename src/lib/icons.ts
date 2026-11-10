@@ -1,4 +1,5 @@
 export const P = {
+  chevL:'<path d="m15 18-6-6 6-6"/>', chevR:'<path d="m9 18 6-6-6-6"/>',
   x:'<path d="M18 6 6 18M6 6l12 12"/>', up:'<path d="M12 3.5 3.5 12.5H8.5V20.5H15.5V12.5H20.5Z"/>',
   cmt:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
   alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
@@ -23,7 +24,7 @@ export const STATUS = {
   progress:{label:'In progress',color:'#d97706',tint:'#fef3e2',ink:'#b45309'},
   released:{label:'Released',color:'#16a34a',tint:'#e7f6ec',ink:'#15803d'},
   unable:{label:"Sorry, tried but unable :(",color:'#dc2626',tint:'#fdecec',ink:'#b42318'},
-  alternative:{label:"Unable, but better alternative available",color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490'},
+  alternative:{label:"Better option available",color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490'},
 };
 // Shown in the area panel and the list tooltip for statuses that need explaining
 export const STATUS_NOTE: Partial<Record<keyof typeof STATUS, string>> = {

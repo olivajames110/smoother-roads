@@ -1,4 +1,5 @@
 import logo from "../assets/logo.jpg";
+import { signOut } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { useStore } from "../lib/store";
 import { AreaList } from "./AreaList";
@@ -11,6 +12,8 @@ export function Sidebar() {
   const setView = useStore((s) => s.setView);
   const openSubmit = useStore((s) => s.openSubmit);
   const collapsed = useStore((s) => s.sidebarCollapsed);
+  const admin = useStore((s) => s.admin);
+  const adminAction = useStore((s) => s.adminAction);
   const patch = useStore((s) => s.patch);
 
   return (
@@ -57,6 +60,14 @@ export function Sidebar() {
               </HoverTip>
             </div>
           </div>
+          {admin && (
+            <div className="dev-bar">
+              <span className="dev">DEV</span>
+              <span className="grow">Signed in as the dev</span>
+              <a href={import.meta.env.BASE_URL + "?admin"}>Admin page</a>
+              <button onClick={() => adminAction(signOut, "Signed out")}>Sign out</button>
+            </div>
+          )}
           <SearchInput placeholder="Search by name, location…" />
           <button className="btn fun block" onClick={openSubmit}>
             <Icon d='<path d="M12 5v14M5 12h14"/>' size={16} weight={2.6} />

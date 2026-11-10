@@ -250,7 +250,7 @@ export function MapView() {
     const narrow = (el.current!.closest(".device")?.clientWidth ?? 1000) <= 860;
     const panelOpen = useStore.getState().panel !== null;
     const sheet = el.current!.clientHeight * 0.66;
-    const pad: L.PointTuple = !panelOpen ? [40, 40] : narrow ? [20, sheet + 20] : [434, 40];
+    const pad: L.PointTuple = !panelOpen ? [40, 40] : narrow ? [20, sheet + 20] : [464, 40];
     l.map.flyToBounds(L.latLngBounds(fly.bounds), {
       paddingTopLeft: [40, 60],
       paddingBottomRight: pad,

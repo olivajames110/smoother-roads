@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { setHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
@@ -8,28 +8,10 @@ import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
 import { AdminMenu } from "./AdminMenu";
 import { Icon } from "./Icon";
+import { withLinks } from "./LinkedText";
+import { Photos } from "./Photos";
 
 const COMMENT_TYPES: Record<CommentType, string> = { feedback: "Feedback", issue: "Issue", question: "Question" };
-
-const URL_RE = /https?:\/\/[^\s<>"]+/g;
-
-// Only for admin comments: the database sets dev, so visitors can't make their links clickable
-function withLinks(text: string) {
-  const parts: ReactNode[] = [];
-  let last = 0;
-  for (const m of text.matchAll(URL_RE)) {
-    const url = m[0].replace(/[.,!?;:)\]'"]+$/, "");
-    parts.push(text.slice(last, m.index));
-    parts.push(
-      <a key={m.index} href={url} target="_blank" rel="noopener">
-        {url}
-      </a>,
-    );
-    last = m.index + url.length;
-  }
-  parts.push(text.slice(last));
-  return parts;
-}
 
 function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
@@ -88,9 +70,12 @@ function Compose() {
   const patch = useStore((s) => s.patch);
   const postComment = useStore((s) => s.postComment);
   const commenter = useStore((s) => s.commenter);
+  const admin = useStore((s) => s.admin);
   const posting = useStore((s) => s.posting);
   const replyingTo = useStore((s) => s.areas.find((a) => a.id === s.selectedId)?.comments.find((c) => c.id === s.comment.replyTo));
   const file = useRef<HTMLInputElement>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
+  const [open, setOpen] = useState(false);
 
   const attach = (f?: File) => {
     if (!f) return;
@@ -99,34 +84,113 @@ function Compose() {
     reader.readAsDataURL(f);
   };
 
+  const expand = () => {
+    setOpen(true);
+    requestAnimationFrame(() => box.current?.focus());
+  };
+
+  // Folds the box away; anything typed stays for when it opens again
+  const fold = () => {
+    setOpen(false);
+    patch({ pinMode: false });
+  };
+
+  const cancel = () => {
+    fold();
+    setComment({ text: "", pin: null, replyTo: null, image: null });
+  };
+
+  // Closes again once a comment is posted
+  useEffect(() => {
+    if (!posting && !comment.text) setOpen(false);
+  }, [posting]);
+
+  // An admin's Reply opens the box with the cursor in it
+  useEffect(() => {
+    if (comment.replyTo) expand();
+  }, [comment.replyTo]);
+
+  if (!open) {
+    return (
+      <div className="compose collapsed">
+        <button className={"compose-open" + (comment.text ? " draft" : "")} onClick={expand}>
+          {comment.text || "Share your thoughts…"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="compose">
-      <div className="chips">
-        {(Object.keys(COMMENT_TYPES) as CommentType[]).map((t) => (
-          <button
-            key={t}
-            className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" ? " issue" : "")}
-            onClick={() => setComment({ type: t })}
-          >
-            {COMMENT_TYPES[t]}
-          </button>
-        ))}
+      <div className="compose-top">
+        <div className="chips">
+          {(Object.keys(COMMENT_TYPES) as CommentType[]).map((t) => (
+            <button
+              key={t}
+              className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" ? " issue" : "")}
+              onClick={() => setComment({ type: t })}
+            >
+              {COMMENT_TYPES[t]}
+            </button>
+          ))}
+        </div>
+        <button className="ibtn compose-fold" title="Collapse" onClick={fold}>
+          <Icon d='<path d="m6 9 6 6 6-6"/>' size={18} weight={2.2} />
+        </button>
       </div>
-      <input
-        className="input"
-        placeholder="Your name (optional)"
-        aria-label="Your name"
-        maxLength={40}
-        value={commenter}
-        onChange={(e) => patch({ commenter: e.target.value })}
-      />
+      <label className="lbl" htmlFor="cmt-name">
+        Name {!admin && <span className="opt">(optional)</span>}
+      </label>
+      <div className={"name-field" + (admin ? " dev-on" : "")}>
+        <input
+          id="cmt-name"
+          className="input"
+          placeholder={admin ? "Jim" : "Anonymous"}
+          maxLength={40}
+          value={commenter}
+          onChange={(e) => patch({ commenter: e.target.value })}
+        />
+        {admin && (
+          <span className="dev" title="You're posting as the dev">
+            DEV
+          </span>
+        )}
+      </div>
+      <label className="lbl cmt-lbl" htmlFor="cmt-text">
+        {comment.type === "issue" ? "Issue" : comment.type === "question" ? "Question" : "Comment"}
+      </label>
       <textarea
+        id="cmt-text"
+        ref={box}
         placeholder={comment.type === "issue" ? "What's wrong, and where?" : "Share your thoughts…"}
         maxLength={2000}
-        aria-label="Comment"
         value={comment.text}
         onChange={(e) => setComment({ text: e.target.value })}
       />
+      <div className="loc-row">
+        <button
+          className={"loc-btn" + (pinMode ? " picking" : comment.pin ? " set" : "")}
+          aria-pressed={pinMode}
+          title={comment.pin ? "Click, then click the map to move the pin" : "Attach a map location to this comment"}
+          onClick={() => patch({ pinMode: !pinMode })}
+        >
+          {pinMode ? <span className="loc-dot" /> : <Icon name="pin" size={15} />}
+          {pinMode
+            ? "Click a spot on the map…"
+            : comment.pin
+              ? `${comment.pin[0].toFixed(4)}, ${comment.pin[1].toFixed(4)}`
+              : "Add map location"}
+        </button>
+        {(pinMode || comment.pin) && (
+          <button
+            className="loc-x"
+            title={pinMode ? "Stop picking" : "Remove location"}
+            onClick={() => (pinMode ? patch({ pinMode: false }) : setComment({ pin: null }))}
+          >
+            <Icon name="x" size={13} weight={2.6} />
+          </button>
+        )}
+      </div>
       <div className="attach">
         {replyingTo && (
           <div className="pinchip">
@@ -145,34 +209,19 @@ function Compose() {
             </button>
           </div>
         )}
-        {comment.pin && (
-          <div className="pinchip">
-            <Icon name="pin" size={14} />
-            Spot pinned to this comment
-            <button className="xbtn" title="Remove location" onClick={() => setComment({ pin: null })}>
-              <Icon name="x" size={11} weight={3} />
-            </button>
-          </div>
-        )}
       </div>
       <div className="compose-row">
+        <button className="btn sm compose-cancel" onClick={cancel}>
+          Cancel
+        </button>
         <span className="spacer" />
         {CONFIG.screenshots && (
           <button className="ibtn" title="Attach a screenshot" onClick={() => file.current?.click()}>
             <Icon name="img" size={18} />
           </button>
         )}
-        <button
-          className={"btn sm" + (pinMode ? " voted" : "")}
-          aria-pressed={pinMode}
-          title="Attach a map location to this comment"
-          onClick={() => patch({ pinMode: !pinMode })}
-        >
-          <Icon name="pin" size={16} />
-          {pinMode ? "Now click the map" : comment.pin ? "Move pin" : "Pin a spot on the map"}
-        </button>
         <button className="btn cyan sm" disabled={!comment.text.trim() || posting} onClick={postComment}>
-          {posting ? "Posting…" : "Post"}
+          {posting ? "Posting…" : "Post " + COMMENT_TYPES[comment.type]}
         </button>
       </div>
       <p className="compose-note">
@@ -364,6 +413,8 @@ export function DetailPanel({ area: a }: { area: Area }) {
           </button>
         </div>
 
+        {CONFIG.database && CONFIG.photos && <Photos area={a} />}
+
         {a.status === "released" && (
           <>
             <h3 className="sec-t">Get it</h3>
@@ -401,12 +452,12 @@ export function DetailPanel({ area: a }: { area: Area }) {
       </div>
 
       {CONFIG.database ? (
-        <Compose />
+        <Compose key={a.id} />
       ) : (
         <div className="soon">
           <div className="soon-content" inert>
             <div className="soon-list">{feedback}</div>
-            <Compose />
+            <Compose key={a.id} />
           </div>
           <div className="soon-cover">Coming soon</div>
         </div>

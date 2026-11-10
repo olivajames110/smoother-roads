@@ -5,7 +5,7 @@ import { Leaderboard } from "./components/Leaderboard";
 import { Legend } from "./components/Legend";
 import { MapHint } from "./components/MapHint";
 import { MapView } from "./components/MapView";
-import { Lightbox, Toast } from "./components/Overlays";
+import { Gallery, Lightbox, Toast } from "./components/Overlays";
 import { Panel } from "./components/Panel";
 import { Sidebar } from "./components/Sidebar";
 import { useStore } from "./lib/store";
@@ -62,6 +62,7 @@ export function App() {
         </main>
       </div>
       <Lightbox />
+      <Gallery />
       <Toast />
     </div>
   );
