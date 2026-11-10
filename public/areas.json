@@ -228,13 +228,15 @@
       "icao": "",
       "cat": "city",
       "noPhotogrammetry": false,
-      "status": "progress",
+      "status": "released",
       "votes": 1,
       "by": "Community",
+      "package": "smoother-roads-geelong-australia",
       "lat": -38.14932,
       "lon": 144.35982,
-      "radiusKm": 15,
-      "added": "2026-11-05"
+      "radiusKm": 1,
+      "added": "2026-11-05",
+      "version": "0.3.0"
     },
     {
       "id": "frederiksberg-denmark",
