@@ -14,6 +14,7 @@
       "lat": 40.69605,
       "lon": -73.498952,
       "radiusKm": 5,
+      "roadKm": 1133.4,
       "added": "2026-11-03",
       "version": "0.2.0"
     },
@@ -29,6 +30,7 @@
       "lat": 40.77326,
       "lon": -73.97369,
       "radiusKm": 10,
+      "roadKm": 1183.4,
       "perimeter": [
         [40.8496, -73.9566],
         [40.8567, -73.9451],
@@ -68,6 +70,7 @@
       "lat": 45.4141,
       "lon": 6.63499,
       "radiusKm": 10,
+      "roadKm": 938.0,
       "added": "2026-11-04",
       "package": "smoother-roads-courchevel-france",
       "version": "0.2.0"
@@ -118,6 +121,7 @@
       "lat": 41.50394,
       "lon": -81.48313,
       "radiusKm": 10,
+      "roadKm": 2084.2,
       "added": "2026-11-04",
       "package": "smoother-roads-lyndhurst-oh",
       "version": "0.2.0"
@@ -168,6 +172,7 @@
       "lat": 40.75142,
       "lon": -111.93695,
       "radiusKm": 10,
+      "roadKm": 2300.3,
       "added": "2026-11-04",
       "package": "smoother-roads-salt-lake-city-ut",
       "version": "0.2.0"
@@ -235,6 +240,7 @@
       "lat": -38.12496,
       "lon": 144.33537,
       "radiusKm": 4.6,
+      "roadKm": 329.6,
       "added": "2026-11-05",
       "version": "0.4.0",
       "perimeter": [
@@ -271,6 +277,7 @@
       "lat": 36.11648,
       "lon": -115.1348,
       "radiusKm": 8.9,
+      "roadKm": 1063.1,
       "perimeter": [
         [36.09738, -115.1453],
         [36.08948, -115.14359],
@@ -342,6 +349,7 @@
       "lat": 49.00687,
       "lon": 8.40342,
       "radiusKm": 10,
+      "roadKm": 1450.5,
       "added": "2026-11-05",
       "package": "smoother-roads-karlsruhe-germany",
       "version": "0.2.0"

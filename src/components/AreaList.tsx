@@ -57,6 +57,7 @@ function AreaItem({ area: a }: { area: Area }) {
   const hovered = useStore((s) => s.hoveredId === a.id);
   const openDetail = useStore((s) => s.openDetail);
   const patch = useStore((s) => s.patch);
+  const toggleVote = useStore((s) => s.toggleVote);
   const status = STATUS[a.status];
 
   return (
@@ -103,10 +104,27 @@ function AreaItem({ area: a }: { area: Area }) {
         </div>
       </div>
       {CONFIG.votes && (
-        <div className={"votes-pill" + (a.voted ? " on" : "")}>
+        <span
+          role="button"
+          tabIndex={0}
+          className={"votes-pill" + (a.voted ? " on" : "")}
+          aria-pressed={a.voted}
+          title={a.voted ? "Remove your upvote" : "Upvote"}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleVote(a.id);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleVote(a.id);
+            }
+          }}
+        >
           <Icon name="up" size={13} weight={2} />
           {fmtN(a.votes)}
-        </div>
+        </span>
       )}
     </button>
   );

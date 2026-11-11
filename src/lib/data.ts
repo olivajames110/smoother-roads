@@ -30,6 +30,7 @@ interface PublishedArea {
   lat: number;
   lon: number;
   radiusKm: number;
+  roadKm?: number; // Length of road in the pack
   perimeter?: LatLng[]; // Replaces the circle when a pack isn't round
   added: string;
   version?: string;
@@ -86,6 +87,7 @@ function toArea(a: PublishedArea): Area {
     spots: a.spots?.map((s) => ({ pin: [s.lat, s.lon], note: s.note, date: dateOf(s.added) })),
     packageName: a.package,
     version: a.version,
+    roadKm: a.roadKm,
   };
 }
 

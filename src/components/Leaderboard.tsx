@@ -71,7 +71,7 @@ export function Leaderboard() {
                 <th className="rank">#</th>
                 <th>Area</th>
                 <th className="col-air">Airport</th>
-                <th className="col-cov">Coverage</th>
+                <th className="col-cov">Area</th>
                 <th className="col-status">Status</th>
                 {CONFIG.database && <th className="col-cmt">Feedback</th>}
                 <th className="col-date">Submitted</th>

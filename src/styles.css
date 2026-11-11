@@ -89,7 +89,9 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 @keyframes area-tip{from{opacity:0;margin-left:-4px}}
 .item-dot{position:relative;flex:none;align-self:flex-start;margin-top:6px}
 .item-dot::after{content:"";position:absolute;inset:-6px}
-.votes-pill{display:flex;align-items:center;gap:2px;flex:none;color:var(--faint);font-weight:600;font-size:12px;line-height:1;font-variant-numeric:tabular-nums}
+.votes-pill{display:flex;align-items:center;gap:2px;flex:none;color:var(--faint);font-weight:600;font-size:12px;line-height:1;font-variant-numeric:tabular-nums;padding:6px 8px;margin:-6px -8px -6px 0;border-radius:8px;cursor:pointer;transition:background .15s,color .15s}
+.votes-pill:hover{background:var(--accent-soft);color:var(--accent-h)}
+.votes-pill:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .votes-pill.on{color:var(--accent-h)}
 .votes-pill.on svg,.vote.on svg,.btn.voted svg{fill:currentColor}
 .empty{padding:28px 12px;text-align:center;color:var(--mut);font-size:13px;line-height:1.55}
@@ -209,6 +211,7 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .stat{background:var(--soft);border-radius:12px;padding:11px 12px}
 .stat .k{font-size:12px;color:var(--mut);margin-bottom:3px;font-weight:500}
 .stat .v{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.stat .v2{display:block;margin-top:2px;font-size:12px;font-weight:500;color:var(--mut);white-space:nowrap}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .actions .btn{flex:1}
 .actions .btn.copy-row{flex:1 1 100%}
@@ -485,9 +488,9 @@ tbody tr:hover{background:var(--soft)}
 /* flightsim.to links in the sidebar: both mods side by side */
 .get-links{display:flex;flex-direction:column;gap:6px}
 .get-row{display:flex;flex-wrap:wrap;gap:8px}
-.get-link{flex:none;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 11px 0 6px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--tx);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;transition:border-color .15s,background .15s}
+.get-link{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 11px 0 6px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--tx);font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;transition:border-color .15s,background .15s}
 .get-link:hover{border-color:var(--accent-line);background:var(--accent-soft)}
-.gl-name{white-space:nowrap}
+.gl-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gl-dl{flex:none;display:flex;margin-left:6px;color:var(--faint);transition:color .15s}
 .get-link:hover .gl-dl{color:var(--accent)}
 .gl-ico{flex:none;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent)}

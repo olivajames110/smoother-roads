@@ -61,6 +61,7 @@ export interface Area {
   spots?: ProblemSpot[];
   packageName?: string;
   version?: string;
+  roadKm?: number; // Length of road in the released pack
   local?: boolean; // Only stored in this browser until the database exists
   hidden?: boolean; // Hidden from visitors from the admin page
   request?: boolean; // Sent through the site and stored in the database

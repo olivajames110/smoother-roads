@@ -24,11 +24,15 @@ export function polygonKm2(pts: LatLng[]) {
 
 export const circleKm2 = (radiusM: number) => Math.PI * (radiusM / 1000) ** 2;
 
-export const coverage = (s: Shape) =>
-  s.type === "circle" ? `${(s.radius / 1000).toFixed(1)} km radius` : `${polygonKm2(s.points).toFixed(1)} km² perimeter`;
 
-export const coverageShort = (s: Shape) =>
-  s.type === "circle" ? `${(s.radius / 1000).toFixed(1)} km` : `${polygonKm2(s.points).toFixed(1)} km²`;
+export const areaKm2 = (s: Shape) => (s.type === "circle" ? circleKm2(s.radius) : polygonKm2(s.points));
+
+const sq = (n: number) => (n >= 100 ? Math.round(n).toLocaleString() : n.toFixed(1));
+
+// Size of the covered area, always as an area (never a radius)
+export const coverageShort = (s: Shape) => `${sq(areaKm2(s))} sq km`;
+export const coverageMi2 = (s: Shape) => `${sq(areaKm2(s) * 0.386102)} sq mi`;
+export const coverage = (s: Shape) => `${coverageMi2(s)} (${coverageShort(s)})`;
 
 export function centerOf(s: Shape): LatLng {
   if (s.type === "circle") return s.center;

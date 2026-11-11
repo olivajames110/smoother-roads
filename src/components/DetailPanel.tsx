@@ -3,7 +3,7 @@ import { setHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { areaRow } from "../lib/data";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
-import { centerOf, coverage, coverageShort } from "../lib/geo";
+import { centerOf, coverage, coverageMi2, coverageShort } from "../lib/geo";
 import { CATS, STATUS, STATUS_NOTE } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
@@ -401,9 +401,21 @@ export function DetailPanel({ area: a }: { area: Area }) {
         )}
         <div className="stats">
           <div className="stat">
-            <div className="k">Coverage</div>
-            <div className="v">{coverageShort(a.shape)}</div>
+            <div className="k">Area</div>
+            <div className="v">
+              <span style={{ whiteSpace: "nowrap" }}>{coverageMi2(a.shape)}</span>
+              <span className="v2">{coverageShort(a.shape)}</span>
+            </div>
           </div>
+          {a.roadKm != null && (
+            <div className="stat">
+              <div className="k">Roads</div>
+              <div className="v">
+                <span style={{ whiteSpace: "nowrap" }}>{Math.round(a.roadKm * 0.621371).toLocaleString()} mi</span>
+                <span className="v2">{Math.round(a.roadKm).toLocaleString()} km</span>
+              </div>
+            </div>
+          )}
           {CONFIG.votes && (
             <div className="stat">
               <div className="k">Votes</div>
