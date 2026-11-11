@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { CONFIG } from "../lib/config";
 import { fmtN, norm } from "../lib/format";
 import { STATUS, STATUS_NOTE } from "../lib/icons";
@@ -16,6 +16,7 @@ interface Group {
 }
 
 const STATUS_ORDER: Status[] = ["requested", "progress", "released", "unable", "alternative"];
+const RELEASED_KEY = "sr-released-only";
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const byName = (a: Area, b: Area) => a.name.localeCompare(b.name);
@@ -117,7 +118,26 @@ export function AreaList() {
   const patch = useStore((s) => s.patch);
   const toggleGroup = useStore((s) => s.toggleGroup);
   const loaded = useStore((s) => s.loaded);
-  const list = useVisible(true);
+  const all = useVisible(true);
+  const [releasedOnly, setReleasedOnly] = useState(() => {
+    try {
+      return localStorage.getItem(RELEASED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const list = useMemo(() => (releasedOnly ? all.filter((a) => a.status === "released") : all), [all, releasedOnly]);
+  const toggleReleased = (on: boolean) => {
+    setReleasedOnly(on);
+    try {
+      localStorage.setItem(RELEASED_KEY, on ? "1" : "0");
+    } catch {
+      /* private window */
+    }
+  };
+  const opt = (value: GroupBy, label: string) => (
+    <option value={value}>{value === group ? `${label} (${list.length})` : label}</option>
+  );
 
   const flat = group === "votes" || group === "new";
   const groups = useMemo(() => (flat ? [] : buildGroups(list, group)), [flat, list, group]);
@@ -135,15 +155,23 @@ export function AreaList() {
             value={group}
             onChange={(e) => patch({ group: e.target.value as GroupBy })}
           >
-            <option value="country">Countries</option>
-            <option value="az">A–Z</option>
-            {CONFIG.votes && <option value="votes">Top voted</option>}
-            <option value="new">Newest</option>
-            <option value="status">By status</option>
+            {opt("country", "Countries")}
+            {opt("az", "A–Z")}
+            {CONFIG.votes && opt("votes", "Top voted")}
+            {opt("new", "Newest")}
+            {opt("status", "By status")}
           </select>
           <Icon d='<path d="m6 9 6 6 6-6"/>' size={16} weight={2.4} />
         </label>
-        <span className="n">{list.length}</span>
+        <div className="seg" role="group" aria-label="Show">
+          <button className={releasedOnly ? "" : "on"} aria-pressed={!releasedOnly} onClick={() => toggleReleased(false)}>
+            All
+          </button>
+          <button className={releasedOnly ? "on" : ""} aria-pressed={releasedOnly} onClick={() => toggleReleased(true)}>
+            <span className="sdot" style={{ background: STATUS.released.color }} />
+            Released
+          </button>
+        </div>
       </div>
 
       {group === "az" && (
@@ -161,7 +189,11 @@ export function AreaList() {
       )}
 
       {list.length === 0 && (
-        <div className="empty">{loaded ? "No areas match. Try another search, or request this area." : "Loading…"}</div>
+        <div className="empty">{!loaded
+            ? "Loading…"
+            : releasedOnly
+              ? "No released areas match. Try another search, or switch to All."
+              : "No areas match. Try another search, or request this area."}</div>
       )}
 
       {flat && items.map((a) => <AreaItem key={a.id} area={a} />)}
@@ -178,7 +210,9 @@ export function AreaList() {
               onClick={() => toggleGroup(id)}
             >
               {g.lead}
-              <span className="gl">{g.label}</span>
+              <span className="gl">
+                {g.label} <span className="gn">({g.items.length})</span>
+              </span>
               <span className="chev">
                 <Icon d='<path d="m6 9 6 6 6-6"/>' size={13} weight={2.4} />
               </span>
