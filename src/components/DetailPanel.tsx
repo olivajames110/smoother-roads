@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
+import { areaRow } from "../lib/data";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageShort } from "../lib/geo";
 import { CATS, STATUS, STATUS_NOTE } from "../lib/icons";
@@ -329,6 +330,21 @@ function Coords({ area: a }: { area: Area }) {
   );
 }
 
+function CopyRow({ area: a }: { area: Area }) {
+  const showToast = useStore((s) => s.showToast);
+  const copy = () =>
+    navigator.clipboard.writeText(areaRow(a)).then(
+      () => showToast("Area details copied"),
+      () => showToast("Couldn't copy the details", true),
+    );
+  return (
+    <button className="btn copy-row" title="Copy the place, coordinates, radius and notes as one spreadsheet row" onClick={copy}>
+      <Icon name="copy" size={15} />
+      Copy details
+    </button>
+  );
+}
+
 export function DetailPanel({ area: a }: { area: Area }) {
   const closePanel = useStore((s) => s.closePanel);
   const toggleVote = useStore((s) => s.toggleVote);
@@ -411,6 +427,7 @@ export function DetailPanel({ area: a }: { area: Area }) {
             <Icon name="target" size={15} />
             Zoom to area
           </button>
+          {admin && <CopyRow area={a} />}
         </div>
 
         {CONFIG.database && CONFIG.photos && <Photos area={a} />}

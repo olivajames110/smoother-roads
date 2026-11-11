@@ -161,6 +161,24 @@ function formParams(a: Area) {
   return params;
 }
 
+// One spreadsheet row (tab-separated, quoted like Excel and Sheets copy it), with everything
+// needed to build or update a pack: place, centre, radius, then the details in the last cell
+export function areaRow(a: Area): string {
+  const [lat, lon] = centerOf(a.shape);
+  const place = [a.name, a.region, a.country].filter((v, i, all) => v && all.indexOf(v) === i).join(", ");
+  const notes = [`Category: ${CATS[a.cat].label}`, `Status: ${a.status}`, `Votes: ${a.votes}`];
+  if (a.icao) notes.push(`Airport: ${a.icao}`);
+  if (a.packageName) notes.push(`Package: ${a.packageName}${a.version ? ` (${a.version})` : ""}`);
+  if (a.noPhotogrammetry) notes.push("No photogrammetry");
+  if (a.notes) notes.push(`Notes: ${a.notes}`);
+  for (const s of a.spots ?? []) notes.push(`Problem spot ${s.pin[0].toFixed(5)}, ${s.pin[1].toFixed(5)}: ${s.note}`);
+  if (a.shape.type === "polygon") notes.push(`Perimeter (lat,lon): ${JSON.stringify(a.shape.points)}`);
+  const cell = (v: string) => (/[\t\n"]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  return [place, lat.toFixed(5), lon.toFixed(5), enclosingRadiusKm(a.shape).toFixed(1), notes.join("\n")]
+    .map(cell)
+    .join("\t");
+}
+
 function spotParams(a: Area, p: LatLng, note: string) {
   const f = CONFIG.formFields;
   const params = new URLSearchParams();

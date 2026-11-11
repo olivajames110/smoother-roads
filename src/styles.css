@@ -204,8 +204,9 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .stat{background:var(--soft);border-radius:12px;padding:11px 12px}
 .stat .k{font-size:12px;color:var(--mut);margin-bottom:3px;font-weight:500}
 .stat .v{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
-.actions{display:flex;gap:8px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
 .actions .btn{flex:1}
+.actions .btn.copy-row{flex:1 1 100%}
 .tip{flex:1;display:flex;position:relative}
 .request-menu .leaflet-popup-content-wrapper{padding:0;border-radius:11px;background:none;box-shadow:var(--shadow)}
 .request-menu .leaflet-popup-content{margin:0;line-height:1}
@@ -524,3 +525,5 @@ tbody tr:hover{background:var(--soft)}
 .admin-status span{flex:1}
 .admin-status.off span{color:var(--faint)}
 .admin-status .input{width:170px}
+
+.copy-pts{width:100%;margin-top:10px}

@@ -22,7 +22,18 @@ function CoverageBox() {
   const undoPoint = useStore((s) => s.undoPoint);
   const clearDraft = useStore((s) => s.clearDraft);
   const finishPolygon = useStore((s) => s.finishPolygon);
+  const admin = useStore((s) => s.admin);
+  const showToast = useStore((s) => s.showToast);
   const n = draft.points.length;
+
+  // Admin: the outline as [[lat, lon], ...], ready to paste into a build
+  const copyPoints = () =>
+    navigator.clipboard
+      .writeText(JSON.stringify(draft.points.map(([la, lo]) => [+la.toFixed(6), +lo.toFixed(6)])))
+      .then(
+        () => showToast(`${n} points copied`),
+        () => showToast("Couldn't copy the points", true),
+      );
 
   if (draft.type === "radius") {
     return (
@@ -70,6 +81,12 @@ function CoverageBox() {
         {n} {n === 1 ? "point" : "points"}
         {n >= 3 && ` · ${polygonKm2(draft.points).toFixed(1)} km²`}
       </div>
+      {admin && n >= 3 && (
+        <button className="btn sm copy-pts" onClick={copyPoints}>
+          <Icon name="copy" size={14} />
+          Copy points
+        </button>
+      )}
     </div>
   );
 }
