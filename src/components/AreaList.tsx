@@ -206,12 +206,12 @@ function ViewMenu({ group, count, onPick }: { group: GroupBy; count: number; onP
 export function AreaList() {
   const group = useStore((s) => s.group);
   const collapsed = useStore((s) => s.collapsed);
-  const patch = useStore((s) => s.patch);
   const toggleGroup = useStore((s) => s.toggleGroup);
   const loaded = useStore((s) => s.loaded);
   const list = useVisible(true);
   const photoOnly = useStore((s) => s.photoOnly);
   const setGroups = useStore((s) => s.setGroups);
+  const setGroup = useStore((s) => s.setGroup);
   const hiddenCount = useStore((s) => s.hidden.size) + (photoOnly ? 1 : 0);
   const flat = group === "votes" || group === "new" || group === "old";
   const groups = useMemo(() => (flat ? [] : buildGroups(list, group)), [flat, list, group]);
@@ -225,7 +225,7 @@ export function AreaList() {
   return (
     <>
       <div className="list-head">
-        <ViewMenu group={group} count={list.length} onPick={(g) => patch({ group: g })} />
+        <ViewMenu group={group} count={list.length} onPick={setGroup} />
         {groups.length > 1 && (
           <button className="fold-all" onClick={() => setGroups(groupIds, anyOpen)}>
             <Icon

@@ -26,6 +26,24 @@ export type PanelMode = "detail" | "submit" | null;
 
 export const INTRO_KEY = "sr-request-intro-off";
 const PHOTO_KEY = "sr-photo-only";
+// The list's filters and view, remembered in this browser
+const HIDDEN_KEY = "sr-hidden-statuses";
+const GROUP_KEY = "sr-group";
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    return v == null ? fallback : (JSON.parse(v) as T);
+  } catch {
+    return fallback;
+  }
+}
+function writeJson(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* private window */
+  }
+}
 // Which list sections are collapsed, remembered in this browser
 const COLLAPSED_KEY = "sr-collapsed";
 function saveCollapsed(c: Set<string>) {
@@ -99,6 +117,7 @@ interface Store {
   setComment: (patch: Partial<CommentDraft>) => void;
   showToast: (message: string, failed?: boolean) => void;
   toggleStatus: (s: Status) => void;
+  setGroup: (g: GroupBy) => void;
   setPhotoOnly: (on: boolean) => void;
   toggleGroup: (key: string) => void;
   setGroups: (keys: string[], shut: boolean) => void;
@@ -153,7 +172,7 @@ export const useStore = create<Store>((set, get) => {
     loaded: false,
     admin: false,
     view: "map",
-    hidden: new Set(),
+    hidden: new Set<Status>(readJson<Status[]>(HIDDEN_KEY, [])),
     requestIntro: null,
     composeNonce: 0,
     photoOnly: (() => {
@@ -163,7 +182,7 @@ export const useStore = create<Store>((set, get) => {
         return false;
       }
     })(),
-    group: "country",
+    group: readJson<GroupBy>(GROUP_KEY, "country"),
     collapsed: (() => {
       try {
         return new Set<string>(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? "[]"));
@@ -235,7 +254,13 @@ export const useStore = create<Store>((set, get) => {
     toggleStatus(s) {
       const hidden = new Set(get().hidden);
       if (!hidden.delete(s)) hidden.add(s);
+      writeJson(HIDDEN_KEY, [...hidden]);
       set({ hidden });
+    },
+
+    setGroup(group) {
+      writeJson(GROUP_KEY, group);
+      set({ group });
     },
 
     toggleGroup(key) {
