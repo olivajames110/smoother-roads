@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setNoPhotogrammetry, setRegionHidden, setStatus, signOut } from "../lib/comments";
 import { REASONS, STATUS } from "../lib/icons";
-import { deleteRequest } from "../lib/requests";
+import { deleteRequestFully } from "../lib/requests";
 import { useStore } from "../lib/store";
 import type { Area, Reason, Status } from "../lib/types";
 import { Icon } from "./Icon";
@@ -112,13 +112,23 @@ export function AdminMenu({ area: a }: { area: Area }) {
               role="menuitem"
               className="pop-item danger"
               onClick={() => {
-                if (!window.confirm(`Delete "${a.name}" for good? Its votes and comments stop showing too.`)) return;
+                const parts = [
+                  `${a.comments.length} comment${a.comments.length === 1 ? "" : "s"}`,
+                  `${a.photos?.length ?? 0} photo${a.photos?.length === 1 ? "" : "s"}`,
+                  `${a.votes} vote${a.votes === 1 ? "" : "s"}`,
+                ];
+                if (
+                  !window.confirm(
+                    `Delete "${a.name}" for good?\n\nThis removes the request and everything on it (${parts.join(", ")}, status and notes). It can't be undone.`,
+                  )
+                )
+                  return;
                 closePanel();
-                run(() => deleteRequest(a.id), "Request deleted");
+                run(() => deleteRequestFully(a), "Deleted for good");
               }}
             >
               <Icon name="trash" size={15} />
-              Delete request
+              Delete for good
             </button>
           )}
           <div className="pop-sep" />

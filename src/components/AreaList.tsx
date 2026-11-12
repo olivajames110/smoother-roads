@@ -77,6 +77,12 @@ function AreaItem({ area: a }: { area: Area }) {
       <div className="item-main">
         <div className="item-head">
           <div className="item-title">{a.name}</div>
+          {a.hidden && (
+            <span className="hid-tag" title="Hidden from visitors: only you can see it">
+              <Icon name="eyeOff" size={12} weight={2.2} />
+              Hidden
+            </span>
+          )}
           {a.noPhotogrammetry && (
             <HoverTip
               className="no-pg"

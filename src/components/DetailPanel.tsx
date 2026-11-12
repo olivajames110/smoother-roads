@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { setHidden, setNotes } from "../lib/comments";
+import { setHidden, setNotes, setRegionHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { areaRow } from "../lib/data";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
@@ -491,6 +491,7 @@ export function DetailPanel({ area: a }: { area: Area }) {
   const voted = CONFIG.votes && a.voted;
   const setComment = useStore((s) => s.setComment);
   const patch = useStore((s) => s.patch);
+  const adminAction = useStore((s) => s.adminAction);
   // Opens the comment box set to a type ("Issue", "Improve"), ready to describe it and mark the
   // spot on the map
   const openAs = (type: CommentType) => {
@@ -544,6 +545,22 @@ export function DetailPanel({ area: a }: { area: Area }) {
       </div>
 
       <div className={"panel-body" + (CONFIG.database ? "" : " short")}>
+        {admin && a.hidden && (
+          <div className="hid-banner">
+            <Icon name="eyeOff" size={18} weight={2.2} />
+            <div className="grow">
+              <b>Hidden from visitors</b>
+              <span>Only you can see this area while you're signed in.</span>
+            </div>
+            <button
+              className="btn sm"
+              onClick={() => adminAction(() => setRegionHidden(a.id, false), "Shown on the site")}
+            >
+              <Icon name="eye" size={14} />
+              Show on site
+            </button>
+          </div>
+        )}
         <div className="stats">
           <div className="stat">
             <div className="k">Area</div>

@@ -210,22 +210,6 @@
       "added": "2026-11-04"
     },
     {
-      "id": "palm-beach-county-fl",
-      "name": "Palm Beach County, FL",
-      "region": "Florida, United States",
-      "country": "United States",
-      "icao": "",
-      "cat": "coastal",
-      "noPhotogrammetry": false,
-      "status": "requested",
-      "votes": 1,
-      "by": "Community",
-      "lat": 26.43922,
-      "lon": -80.1281,
-      "radiusKm": 15,
-      "added": "2026-11-04"
-    },
-    {
       "id": "geelong-australia",
       "name": "Geelong, Australia",
       "region": "Victoria, Australia",

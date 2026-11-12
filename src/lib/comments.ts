@@ -119,6 +119,8 @@ export async function setHidden(id: string, hidden: boolean) {
 export async function setStatus(areaId: string, status: Status, reason?: Reason) {
   const row: Record<string, unknown> = { area_id: areaId, status, updated_at: new Date().toISOString() };
   if (status === "unable") row.reason = reason ?? "tried";
+  // Unable because of no photogrammetry also marks it "Not a photogrammetry zone"
+  if (status === "unable" && reason === "no-photogrammetry") row.no_photogrammetry = true;
   const { error } = await sb.from("area_status").upsert(row);
   if (error) {
     if (/reason/.test(error.message)) throw new Error("Run supabase/012_unable_reasons.sql in Supabase first");

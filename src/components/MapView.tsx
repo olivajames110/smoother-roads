@@ -37,7 +37,7 @@ function clusterIcon(c: L.MarkerCluster) {
 // "Unable" pins are split: the left half red, the right half the reason's colour
 function pinIcon(a: Area, state: string) {
   return L.divIcon({
-    html: `<div class="pin ${state}" style="--sc:${STATUS[a.status].color};--sc2:${sideColor(a)}">${svgHtml(CATS[a.cat].icon, 16, 2.2)}</div>`,
+    html: `<div class="pin ${state}${a.hidden ? " hid" : ""}" style="--sc:${STATUS[a.status].color};--sc2:${sideColor(a)}">${svgHtml(CATS[a.cat].icon, 16, 2.2)}</div>`,
     className: "pin-wrap",
     iconSize: [34, 34],
     iconAnchor: [17, 17],
@@ -48,7 +48,8 @@ const shapeStyle = (a: Area, on: boolean): L.PathOptions => ({
   color: STATUS[a.status].color,
   weight: on ? 3 : 2,
   fillColor: sideColor(a),
-  fillOpacity: on ? 0.22 : 0.1,
+  fillOpacity: on ? 0.22 : a.hidden ? 0.04 : 0.1,
+  dashArray: a.hidden ? "6 6" : undefined, // admin only: hidden areas are dashed and faint
   bubblingMouseEvents: false,
 });
 

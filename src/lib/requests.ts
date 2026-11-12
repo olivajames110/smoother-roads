@@ -48,6 +48,29 @@ export async function deleteRequest(id: string) {
   if (error) throw error;
 }
 
+// Admin: delete a request and everything attached to it: comments, photos (and their files),
+// its status / notes row and its votes. The request itself goes last, so if anything fails it
+// stays listed and the delete can simply be run again.
+export async function deleteRequestFully(a: Area) {
+  const check = (r: { error: unknown }) => {
+    if (r.error) throw r.error;
+  };
+  check(await sb.from("area_comments").delete().eq("area_id", a.id));
+  const photos = await sb.from("area_photos").select("id, path").eq("area_id", a.id);
+  check(photos);
+  if (photos.data?.length) {
+    check(await sb.from("area_photos").delete().eq("area_id", a.id));
+    await sb.storage
+      .from("area-photos")
+      .remove(photos.data.map((p) => p.path as string))
+      .catch(() => undefined);
+  }
+  check(await sb.from("area_status").delete().eq("area_id", a.id));
+  // votes need 014_admin_delete_votes.sql; without it they're left behind, unseen
+  await sb.from("area_votes").delete().eq("area_id", a.id);
+  check(await sb.from("area_requests").delete().eq("id", a.id));
+}
+
 export async function addRequest(a: Area) {
   await ensureVisitor();
   const [lat, lon] = centerOf(a.shape);
