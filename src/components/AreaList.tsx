@@ -215,10 +215,9 @@ export function AreaList() {
   const toggleGroup = useStore((s) => s.toggleGroup);
   const loaded = useStore((s) => s.loaded);
   const list = useVisible(true);
-  const photoOnly = useStore((s) => s.photoOnly);
   const setGroups = useStore((s) => s.setGroups);
   const setGroup = useStore((s) => s.setGroup);
-  const hiddenCount = useStore((s) => s.hidden.size) + (photoOnly ? 1 : 0);
+  const hiddenCount = useStore((s) => s.hidden.size);
   const flat = group === "votes" || group === "new" || group === "old";
   const groups = useMemo(() => (flat ? [] : buildGroups(list, group)), [flat, list, group]);
   const items = useMemo(

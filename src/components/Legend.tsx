@@ -1,49 +1,50 @@
 import { useMemo } from "react";
-import { STATUS } from "../lib/icons";
+import { REASONS, STATUS, filterKey, type FilterKey } from "../lib/icons";
 import { matches, useStore } from "../lib/store";
-import type { Status } from "../lib/types";
-import { Icon } from "./Icon";
 
-const ORDER: Status[] = ["requested", "progress", "released", "unable"];
+// The chips above the list: click one to show or hide those areas (list and map).
+// "Unable" is split by reason; "Unable – Tried" only shows when an area has it.
+const CHIPS: { key: FilterKey; label: string; color: string; color2?: string; always?: boolean }[] = [
+  { key: "requested", label: STATUS.requested.label, color: STATUS.requested.color, always: true },
+  { key: "progress", label: STATUS.progress.label, color: STATUS.progress.color, always: true },
+  { key: "released", label: STATUS.released.label, color: STATUS.released.color, always: true },
+  { key: "unable:no-photogrammetry", label: "Unable – Photogramm.", color: STATUS.unable.color,
+    color2: REASONS["no-photogrammetry"].color, always: true },
+  { key: "unable:alternative", label: "Alternative", color: STATUS.unable.color,
+    color2: REASONS.alternative.color, always: true },
+  { key: "unable:tried", label: "Unable – Tried", color: STATUS.unable.color },
+];
 
-// Status filter above the list: click a status to show or hide those areas (list and map)
 export function StatusFilter() {
   const areas = useStore((s) => s.areas);
   const query = useStore((s) => s.query);
   const hidden = useStore((s) => s.hidden);
   const toggleStatus = useStore((s) => s.toggleStatus);
-  const photoOnly = useStore((s) => s.photoOnly);
-  const setPhotoOnly = useStore((s) => s.setPhotoOnly);
 
   const counts = useMemo(() => {
-    const shown = areas.filter((a) => matches(a, query) && (!photoOnly || !a.noPhotogrammetry));
-    return Object.fromEntries(ORDER.map((s) => [s, shown.filter((a) => a.status === s).length]));
-  }, [areas, query, photoOnly]);
+    const c: Partial<Record<FilterKey, number>> = {};
+    for (const a of areas) if (matches(a, query)) c[filterKey(a)] = (c[filterKey(a)] ?? 0) + 1;
+    return c;
+  }, [areas, query]);
 
   return (
     <div className="status-filter" role="group" aria-label="Show statuses">
-      {ORDER.map((s) => (
+      {CHIPS.filter((c) => c.always || counts[c.key]).map((c) => (
         <button
-          key={s}
-          className={"lg-btn" + (hidden.has(s) ? " off" : "")}
-          aria-pressed={!hidden.has(s)}
-          title={`Show or hide ${STATUS[s].label.toLowerCase()} areas`}
-          onClick={() => toggleStatus(s)}
+          key={c.key}
+          className={"lg-btn" + (hidden.has(c.key) ? " off" : "")}
+          aria-pressed={!hidden.has(c.key)}
+          title={`Show or hide ${c.label.toLowerCase()} areas`}
+          onClick={() => toggleStatus(c.key)}
         >
-          <i className="ring" style={{ "--sc": STATUS[s].color } as React.CSSProperties} />
-          {STATUS[s].label}
-          <span className="c">{counts[s]}</span>
+          <i
+            className="ring"
+            style={{ background: `linear-gradient(90deg, ${c.color} 50%, ${c.color2 ?? c.color} 50%)` }}
+          />
+          {c.label}
+          <span className="c">{counts[c.key] ?? 0}</span>
         </button>
       ))}
-      <button
-        className={"lg-btn ph-chip" + (photoOnly ? " on" : "")}
-        aria-pressed={photoOnly}
-        title="Only show areas with photogrammetry scenery"
-        onClick={() => setPhotoOnly(!photoOnly)}
-      >
-        <Icon name={photoOnly ? "check" : "layers"} size={13} weight={2.4} />
-        Photogrammetry only
-      </button>
     </div>
   );
 }

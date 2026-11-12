@@ -8,6 +8,7 @@ import { setVote } from "./votes";
 import { countryOf, norm } from "./format";
 import { boundsOf, centerOf, contains, issueCount, shapeFromDraft } from "./geo";
 import { reversePlace, searchPlace } from "./geocode";
+import type { FilterKey } from "./icons";
 import type {
   Area,
   AreaComment,
@@ -17,7 +18,6 @@ import type {
   GroupBy,
   LatLng,
   SortBy,
-  Status,
   SubmitForm,
 } from "./types";
 
@@ -25,7 +25,6 @@ export type View = "map" | "list";
 export type PanelMode = "detail" | "submit" | null;
 
 export const INTRO_KEY = "sr-request-intro-off";
-const PHOTO_KEY = "sr-photo-only";
 // The list's filters and view, remembered in this browser
 const HIDDEN_KEY = "sr-hidden-statuses";
 const GROUP_KEY = "sr-group";
@@ -43,6 +42,14 @@ function writeJson(key: string, value: unknown) {
   } catch {
     /* private window */
   }
+}
+// Saved chips from before "Unable" was split by reason: "unable" stands for all three
+function readHidden() {
+  const saved = readJson<string[]>(HIDDEN_KEY, []);
+  const keys = saved.flatMap((k) =>
+    k === "unable" ? ["unable:no-photogrammetry", "unable:alternative", "unable:tried"] : [k],
+  );
+  return new Set(keys as FilterKey[]);
 }
 // Which list sections are collapsed, remembered in this browser
 const COLLAPSED_KEY = "sr-collapsed";
@@ -80,7 +87,7 @@ interface Store {
   loaded: boolean;
   admin: boolean;
   view: View;
-  hidden: Set<Status>;
+  hidden: Set<FilterKey>; // Status chips switched off
   group: GroupBy;
   collapsed: Set<string>;
   query: string;
@@ -107,7 +114,6 @@ interface Store {
   toastFailed: boolean;
   fly: FlyRequest | null;
   requestIntro: (() => void) | null; // The "before you request" note is open; runs this on Proceed
-  photoOnly: boolean; // Only photogrammetry areas on the map and in the list
   composeNonce: number; // Bumped to open the comment box (Report an issue)
 
   init: (demo?: Area[]) => Promise<void>;
@@ -116,9 +122,8 @@ interface Store {
   setForm: (patch: Partial<SubmitForm>) => void;
   setComment: (patch: Partial<CommentDraft>) => void;
   showToast: (message: string, failed?: boolean) => void;
-  toggleStatus: (s: Status) => void;
+  toggleStatus: (k: FilterKey) => void;
   setGroup: (g: GroupBy) => void;
-  setPhotoOnly: (on: boolean) => void;
   toggleGroup: (key: string) => void;
   setGroups: (keys: string[], shut: boolean) => void;
   setView: (v: View) => void;
@@ -172,16 +177,9 @@ export const useStore = create<Store>((set, get) => {
     loaded: false,
     admin: false,
     view: "map",
-    hidden: new Set<Status>(readJson<Status[]>(HIDDEN_KEY, [])),
+    hidden: readHidden(),
     requestIntro: null,
     composeNonce: 0,
-    photoOnly: (() => {
-      try {
-        return localStorage.getItem(PHOTO_KEY) === "1";
-      } catch {
-        return false;
-      }
-    })(),
     group: readJson<GroupBy>(GROUP_KEY, "country"),
     collapsed: (() => {
       try {
@@ -240,15 +238,6 @@ export const useStore = create<Store>((set, get) => {
       clearTimeout(toastTimer);
       set({ toast: message, toastFailed: failed });
       toastTimer = setTimeout(() => set({ toast: null }), 3200);
-    },
-
-    setPhotoOnly(on) {
-      set({ photoOnly: on });
-      try {
-        localStorage.setItem(PHOTO_KEY, on ? "1" : "0");
-      } catch {
-        /* private window */
-      }
     },
 
     toggleStatus(s) {

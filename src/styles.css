@@ -121,14 +121,12 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .status-filter{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .status-filter + .item,.status-filter + .empty{margin-top:8px}
 /* "Photogrammetry only": a chip that turns blue when on */
-.status-filter .ph-chip{color:var(--mut)}
-.status-filter .ph-chip.on{color:var(--accent-h);background:var(--accent-soft);border-color:var(--accent-line)}
 .status-filter .lg-btn{height:28px;padding:0 11px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface);gap:6px;font-size:12.5px;text-decoration:none}
 .status-filter .lg-btn:hover{background:var(--soft)}
 .status-filter .lg-btn .c{margin-left:0}
 .status-filter .ring{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--sc)}
 .status-filter .lg-btn.off{opacity:1;color:var(--faint);background:var(--soft);border-color:var(--line)}
-.status-filter .lg-btn.off .ring{background:var(--line-2)}
+.status-filter .lg-btn.off .ring{background:var(--line-2)!important}
 .status-filter .lg-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
 /* search with the request button beside it */

@@ -29,7 +29,7 @@ export const STATUS = {
 export const REASONS = {
   alternative:{label:'Alternative available',color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490',
     note:"I couldn't cover this one, but there's a better alternative already available."},
-  'no-photogrammetry':{label:'No photogrammetry',color:'#eab308',tint:'#fef9c3',ink:'#a16207',
+  'no-photogrammetry':{label:'No photogrammetry',color:'#facc15',tint:'#fef9c3',ink:'#a16207',
     // the message box is red (the badge and marker stay yellow)
     noteTint:'#fdecec',noteInk:'#b42318',
     note:"Sorry, this area isn't covered by photogrammetry, so it doesn't meet the requirements for smoothing roads across the whole area.\n\nIf you have serious interest in improving any terrain within this existing area and would like me to try, please click \"Request improvement\" below and mark one small, specific spot that needs flattening, and I'll try it as a test."},
@@ -37,6 +37,10 @@ export const REASONS = {
     note:"I tried, but couldn't get this one drivable."},
 };
 export type Reason = keyof typeof REASONS;
+// The status chips filter by this: the status, or for "unable" the status and its reason
+export type FilterKey = "requested" | "progress" | "released" | `unable:${Reason}`;
+export const filterKey = (a: { status: keyof typeof STATUS; reason?: Reason }): FilterKey =>
+  a.status === "unable" ? `unable:${a.reason ?? "tried"}` : a.status;
 // What an area's status reads as: "Unable · No photogrammetry"
 export const statusLabel = (a: { status: keyof typeof STATUS; reason?: Reason }) =>
   a.status === "unable" ? `Unable · ${REASONS[a.reason ?? "tried"].label}` : STATUS[a.status].label;
