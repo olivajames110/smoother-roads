@@ -24,6 +24,17 @@ import type {
 export type View = "map" | "list";
 export type PanelMode = "detail" | "submit" | null;
 
+export const INTRO_KEY = "sr-request-intro-off";
+const PHOTO_KEY = "sr-photo-only";
+// Which list sections are collapsed, remembered in this browser
+const COLLAPSED_KEY = "sr-collapsed";
+function saveCollapsed(c: Set<string>) {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...c]));
+  } catch {
+    /* private window */
+  }
+}
 const newDraft = (): Draft => ({ type: "radius", center: null, radius: 3000, points: [], closed: false });
 const newForm = (): SubmitForm => ({ name: "", region: "", icao: "", notes: "", cat: "city" });
 const newComment = (): CommentDraft => ({ type: "feedback", text: "", image: null, pin: null, replyTo: null });
@@ -77,6 +88,9 @@ interface Store {
   toast: string | null;
   toastFailed: boolean;
   fly: FlyRequest | null;
+  requestIntro: (() => void) | null; // The "before you request" note is open; runs this on Proceed
+  photoOnly: boolean; // Only photogrammetry areas on the map and in the list
+  composeNonce: number; // Bumped to open the comment box (Report an issue)
 
   init: (demo?: Area[]) => Promise<void>;
   adminAction: (job: () => Promise<unknown>, done: string) => Promise<void>;
@@ -85,7 +99,9 @@ interface Store {
   setComment: (patch: Partial<CommentDraft>) => void;
   showToast: (message: string, failed?: boolean) => void;
   toggleStatus: (s: Status) => void;
+  setPhotoOnly: (on: boolean) => void;
   toggleGroup: (key: string) => void;
+  setGroups: (keys: string[], shut: boolean) => void;
   setView: (v: View) => void;
   openDetail: (id: string) => void;
   closePanel: () => void;
@@ -96,6 +112,7 @@ interface Store {
   uploadPhotos: (files: File[]) => Promise<void>;
   movePhoto: (areaId: string, from: number, to: number) => Promise<void>;
   openSubmit: () => void;
+  beginRequest: (go: () => void) => void;
   requestAt: (p: LatLng, zoom: number) => void;
   setDrawType: (t: Draft["type"]) => void;
   setRadius: (metres: number) => void;
@@ -137,8 +154,23 @@ export const useStore = create<Store>((set, get) => {
     admin: false,
     view: "map",
     hidden: new Set(),
+    requestIntro: null,
+    composeNonce: 0,
+    photoOnly: (() => {
+      try {
+        return localStorage.getItem(PHOTO_KEY) === "1";
+      } catch {
+        return false;
+      }
+    })(),
     group: "country",
-    collapsed: new Set(),
+    collapsed: (() => {
+      try {
+        return new Set<string>(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? "[]"));
+      } catch {
+        return new Set<string>();
+      }
+    })(),
     query: "",
     sort: "votes",
     selectedId: null,
@@ -191,6 +223,15 @@ export const useStore = create<Store>((set, get) => {
       toastTimer = setTimeout(() => set({ toast: null }), 3200);
     },
 
+    setPhotoOnly(on) {
+      set({ photoOnly: on });
+      try {
+        localStorage.setItem(PHOTO_KEY, on ? "1" : "0");
+      } catch {
+        /* private window */
+      }
+    },
+
     toggleStatus(s) {
       const hidden = new Set(get().hidden);
       if (!hidden.delete(s)) hidden.add(s);
@@ -200,6 +241,17 @@ export const useStore = create<Store>((set, get) => {
     toggleGroup(key) {
       const collapsed = new Set(get().collapsed);
       if (!collapsed.delete(key)) collapsed.add(key);
+      saveCollapsed(collapsed);
+      set({ collapsed });
+    },
+
+    setGroups(keys, shut) {
+      const collapsed = new Set(get().collapsed);
+      for (const k of keys) {
+        if (shut) collapsed.add(k);
+        else collapsed.delete(k);
+      }
+      saveCollapsed(collapsed);
       set({ collapsed });
     },
 
@@ -362,11 +414,25 @@ export const useStore = create<Store>((set, get) => {
         sidebarOpen: false,
       }),
 
+    // Every new request first shows the "before you request" note, unless it was dismissed for good
+    beginRequest(go) {
+      let skip = false;
+      try {
+        skip = localStorage.getItem(INTRO_KEY) === "1";
+      } catch {
+        /* private window: show it */
+      }
+      if (skip) go();
+      else set({ requestIntro: go });
+    },
+
     // Same result as opening the form and clicking the map, kept in view beside the panel
     requestAt(p, zoom) {
-      get().openSubmit();
-      get().onMapPoint(p);
-      get().flyToPoint(p, zoom);
+      get().beginRequest(() => {
+        get().openSubmit();
+        get().onMapPoint(p);
+        get().flyToPoint(p, zoom);
+      });
     },
 
     setDrawType: (type) => set({ draft: { ...get().draft, type } }),
@@ -519,5 +585,6 @@ export function matches(a: Area, q: string) {
 export const SORTS: Record<SortBy, (a: Area, b: Area) => number> = {
   votes: (a, b) => b.votes - a.votes,
   new: (a, b) => b.date - a.date,
+  old: (a, b) => a.date - b.date,
   issues: (a, b) => issueCount(b) - issueCount(a) || b.votes - a.votes,
 };

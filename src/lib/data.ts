@@ -1,7 +1,7 @@
 import { CONFIG } from "./config";
 import { centerOf, enclosingRadiusKm } from "./geo";
 import { CATS } from "./icons";
-import type { Area, AreaComment, AreaPhoto, Cat, LatLng, Status } from "./types";
+import type { Area, AreaComment, AreaPhoto, Cat, LatLng, Reason, Status } from "./types";
 import { fetchComments, fetchStatuses, type AreaOverride } from "./comments";
 import { fetchPhotos } from "./photos";
 import { fetchRequests } from "./requests";
@@ -23,7 +23,8 @@ interface PublishedArea {
   icao?: string;
   cat: Cat;
   noPhotogrammetry?: boolean;
-  status?: Status; // Released unless set
+  status?: Status | "alternative"; // Released unless set ("alternative" = unable, alternative available)
+  reason?: Reason;
   votes?: number;
   by?: string;
   package?: string;
@@ -74,7 +75,8 @@ function toArea(a: PublishedArea): Area {
     icao: a.icao ?? "",
     cat: a.cat,
     noPhotogrammetry: a.noPhotogrammetry,
-    status: a.status ?? "released",
+    status: a.status === "alternative" ? "unable" : a.status ?? "released",
+    reason: a.status === "alternative" ? "alternative" : a.reason,
     votes: a.votes ?? 0,
     voted: false,
     by: a.by ?? "Smoother Roads",
@@ -126,8 +128,10 @@ export async function loadAreas(withHidden = false): Promise<Area[]> {
       .map((a) => ({
         ...a,
         status: statuses.get(a.id)?.status ?? a.status,
+        reason: statuses.get(a.id)?.status ? (statuses.get(a.id)?.reason ?? undefined) : a.reason,
         hidden: statuses.get(a.id)?.hidden,
         noPhotogrammetry: statuses.get(a.id)?.noPhotogrammetry ?? a.noPhotogrammetry,
+        notes: statuses.get(a.id)?.notes ?? a.notes,
         comments: (comments.get(a.id) ?? []).filter((c) => withHidden || !c.hidden),
         photos: photos.get(a.id) ?? [],
       }))
@@ -168,7 +172,7 @@ function formParams(a: Area) {
 export function areaRow(a: Area): string {
   const [lat, lon] = centerOf(a.shape);
   const place = [a.name, a.region, a.country].filter((v, i, all) => v && all.indexOf(v) === i).join(", ");
-  const notes = [`Category: ${CATS[a.cat].label}`, `Status: ${a.status}`, `Votes: ${a.votes}`];
+  const notes = [`Category: ${CATS[a.cat].label}`, `Status: ${a.status}${a.reason ? ` (${a.reason})` : ""}`, `Votes: ${a.votes}`];
   if (a.icao) notes.push(`Airport: ${a.icao}`);
   if (a.packageName) notes.push(`Package: ${a.packageName}${a.version ? ` (${a.version})` : ""}`);
   if (a.noPhotogrammetry) notes.push("No photogrammetry");

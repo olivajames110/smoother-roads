@@ -1,5 +1,5 @@
 import { captchaToken, ensureVisitor, sb } from "./supabase";
-import type { AreaComment, CommentType, LatLng, Status } from "./types";
+import type { AreaComment, CommentType, LatLng, Reason, Status } from "./types";
 
 const COLUMNS = "id, area_id, author, dev, type, body, pin_lat, pin_lon, hidden, created_at, reply_to";
 
@@ -41,21 +41,46 @@ export async function fetchComments() {
 
 export interface AreaOverride {
   status: Status | null;
+  reason: Reason | null;
   hidden: boolean;
   noPhotogrammetry: boolean | null; // null keeps the value from areas.json
+  notes: string | null; // null keeps the area's own notes
 }
 
 export async function fetchStatuses() {
-  let { data, error } = await sb.from("area_status").select("area_id, status, hidden, no_photogrammetry");
-  // Before 008_photogrammetry_toggle.sql runs the column is missing; keep statuses and hiding working
-  if (error) ({ data, error } = await sb.from("area_status").select("area_id, status, hidden"));
+  // Columns added by later migrations go first; drop them one at a time until a select works,
+  // so statuses and hiding keep working before 008 / 011 have been run
+  const tries = [
+    "area_id, status, hidden, no_photogrammetry, notes, reason",
+    "area_id, status, hidden, no_photogrammetry, notes",
+    "area_id, status, hidden, no_photogrammetry",
+    "area_id, status, hidden",
+  ];
+  let data: Record<string, unknown>[] | null = null;
+  let error: unknown = null;
+  for (const cols of tries) {
+    ({ data, error } = await sb.from("area_status").select(cols));
+    if (!error) break;
+  }
   if (error) throw error;
   return new Map<string, AreaOverride>(
     (data ?? []).map((r) => [
       r.area_id as string,
-      { status: r.status as Status | null, hidden: r.hidden as boolean, noPhotogrammetry: (r.no_photogrammetry ?? null) as boolean | null },
+      {
+        // The old "alternative" status is now Unable + "Alternative available"
+        status: (r.status === "alternative" ? "unable" : r.status) as Status | null,
+        reason: (r.status === "alternative" ? "alternative" : r.reason ?? null) as Reason | null,
+        hidden: r.hidden as boolean,
+        noPhotogrammetry: (r.no_photogrammetry ?? null) as boolean | null,
+        notes: (r.notes ?? null) as string | null,
+      },
     ]),
   );
+}
+
+export async function setNotes(areaId: string, notes: string) {
+  const { error } = await sb.from("area_status").upsert({ area_id: areaId, notes, updated_at: new Date().toISOString() });
+  if (error) throw error;
 }
 
 export async function addComment(
@@ -89,9 +114,16 @@ export async function setHidden(id: string, hidden: boolean) {
   if (error) throw error;
 }
 
-export async function setStatus(areaId: string, status: Status) {
-  const { error } = await sb.from("area_status").upsert({ area_id: areaId, status, updated_at: new Date().toISOString() });
-  if (error) throw error;
+// The reason only goes with "unable" (other statuses ignore it, so it isn't sent and they work
+// even before 012_unable_reasons.sql has run)
+export async function setStatus(areaId: string, status: Status, reason?: Reason) {
+  const row: Record<string, unknown> = { area_id: areaId, status, updated_at: new Date().toISOString() };
+  if (status === "unable") row.reason = reason ?? "tried";
+  const { error } = await sb.from("area_status").upsert(row);
+  if (error) {
+    if (/reason/.test(error.message)) throw new Error("Run supabase/012_unable_reasons.sql in Supabase first");
+    throw error;
+  }
 }
 
 export async function setRegionHidden(areaId: string, hidden: boolean) {

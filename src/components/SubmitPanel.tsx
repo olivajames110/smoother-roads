@@ -5,7 +5,7 @@ import type { Cat } from "../lib/types";
 import { Icon } from "./Icon";
 
 const RADIUS_MIN = 500;
-const RADIUS_MAX = 15000;
+const RADIUS_MAX = 5000;
 
 function Step({ done, children }: { done: boolean; children: React.ReactNode }) {
   return (

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { setHidden } from "../lib/comments";
+import { setHidden, setNotes } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { areaRow } from "../lib/data";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageMi2, coverageShort } from "../lib/geo";
-import { CATS, STATUS, STATUS_NOTE } from "../lib/icons";
+import { CATS, REASONS, STATUS, statusNote } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
 import { AdminMenu } from "./AdminMenu";
@@ -13,6 +13,69 @@ import { withLinks } from "./LinkedText";
 import { Photos } from "./Photos";
 
 const COMMENT_TYPES: Record<CommentType, string> = { feedback: "Feedback", issue: "Issue", question: "Question" };
+
+// Admin: the area's notes, editable in place (saved to the database, shown to everyone)
+function NotesEditor({ area: a }: { area: Area }) {
+  const adminAction = useStore((s) => s.adminAction);
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(a.notes);
+  const [saving, setSaving] = useState(false);
+
+  const start = () => {
+    setText(a.notes);
+    setEditing(true);
+  };
+  const save = async () => {
+    setSaving(true);
+    await adminAction(() => setNotes(a.id, text.trim()), "Notes saved");
+    setSaving(false);
+    setEditing(false);
+  };
+
+  return (
+    <>
+      <h3 className="sec-t">
+        Notes
+        {!editing && (
+          <button className="link-btn" onClick={start}>
+            <Icon d='<path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/>' size={13} weight={2.2} />
+            {a.notes ? "Edit" : "Add notes"}
+          </button>
+        )}
+      </h3>
+      {editing ? (
+        <div className="notes-edit">
+          <textarea
+            value={text}
+            rows={5}
+            autoFocus
+            placeholder="Notes everyone sees on this area"
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.stopPropagation();
+                setEditing(false);
+              } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) save();
+            }}
+          />
+          <div className="notes-edit-btns">
+            <span className="hint">Ctrl+Enter to save</span>
+            <button className="btn sm" disabled={saving} onClick={() => setEditing(false)}>
+              Cancel
+            </button>
+            <button className="btn sm fun" disabled={saving || text.trim() === a.notes.trim()} onClick={save}>
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      ) : a.notes ? (
+        <div className="notes">{withLinks(a.notes)}</div>
+      ) : (
+        <div className="notes empty-notes">No notes yet</div>
+      )}
+    </>
+  );
+}
 
 function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
@@ -111,11 +174,41 @@ function Compose() {
     if (comment.replyTo) expand();
   }, [comment.replyTo]);
 
+  // "Report an issue" opens it too, scrolled into view
+  // (only clicks after this box appeared: opening another area mustn't open it)
+  const composeNonce = useStore((s) => s.composeNonce);
+  const seenNonce = useRef(composeNonce);
+  useEffect(() => {
+    if (composeNonce === seenNonce.current) return;
+    seenNonce.current = composeNonce;
+    expand();
+    requestAnimationFrame(() => box.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+  }, [composeNonce]);
+
+  // The type chips show folded too; picking one opens the box with that type
+  const chips = (
+    <div className="chips">
+      {(Object.keys(COMMENT_TYPES) as CommentType[]).map((t) => (
+        <button
+          key={t}
+          className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" ? " issue" : "")}
+          onClick={() => {
+            setComment({ type: t });
+            if (!open) expand();
+          }}
+        >
+          {COMMENT_TYPES[t]}
+        </button>
+      ))}
+    </div>
+  );
+
   if (!open) {
     return (
       <div className="compose collapsed">
+        <div className="compose-top">{chips}</div>
         <button className={"compose-open" + (comment.text ? " draft" : "")} onClick={expand}>
-          {comment.text || "Share your thoughts…"}
+          {comment.text || (comment.type === "issue" ? "What's wrong, and where?" : "Share your thoughts…")}
         </button>
       </div>
     );
@@ -124,17 +217,7 @@ function Compose() {
   return (
     <div className="compose">
       <div className="compose-top">
-        <div className="chips">
-          {(Object.keys(COMMENT_TYPES) as CommentType[]).map((t) => (
-            <button
-              key={t}
-              className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" ? " issue" : "")}
-              onClick={() => setComment({ type: t })}
-            >
-              {COMMENT_TYPES[t]}
-            </button>
-          ))}
-        </div>
+        {chips}
         <button className="ibtn compose-fold" title="Collapse" onClick={fold}>
           <Icon d='<path d="m6 9 6 6 6-6"/>' size={18} weight={2.2} />
         </button>
@@ -351,7 +434,15 @@ export function DetailPanel({ area: a }: { area: Area }) {
   const zoomTo = useStore((s) => s.zoomTo);
   const admin = useStore((s) => s.admin);
   const status = STATUS[a.status];
+  const reason = REASONS[a.reason ?? "tried"];
   const voted = CONFIG.votes && a.voted;
+  const setComment = useStore((s) => s.setComment);
+  const patch = useStore((s) => s.patch);
+  // Opens the comment box set to "Issue", ready to describe it and mark the spot on the map
+  const reportIssue = () => {
+    setComment({ type: "issue" });
+    patch({ composeNonce: useStore.getState().composeNonce + 1 });
+  };
 
   const feedback = (
     <>
@@ -379,6 +470,11 @@ export function DetailPanel({ area: a }: { area: Area }) {
         <div className="grow">
           <div className="eyebrow">
             <span className={"badge s-" + a.status}>{status.label}</span>
+            {a.status === "unable" && (
+              <span className="badge" style={{ background: reason.tint, color: reason.ink }}>
+                {reason.label}
+              </span>
+            )}
             <span className="badge cat-b">{CATS[a.cat].label}</span>
             {a.hidden && <span className="badge cat-b">Hidden</span>}
           </div>
@@ -394,9 +490,9 @@ export function DetailPanel({ area: a }: { area: Area }) {
       </div>
 
       <div className={"panel-body" + (CONFIG.database ? "" : " short")}>
-        {STATUS_NOTE[a.status] && (
-          <div className="status-note" style={{ background: status.tint, color: status.ink }}>
-            {STATUS_NOTE[a.status]}
+        {statusNote(a) && (
+          <div className="status-note" style={{ background: reason.tint, color: reason.ink }}>
+            {statusNote(a)}
           </div>
         )}
         <div className="stats">
@@ -435,6 +531,12 @@ export function DetailPanel({ area: a }: { area: Area }) {
               {voted ? "Upvoted" : "Upvote"}
             </button>
           </span>
+          {CONFIG.database && (
+            <button className="btn report-btn" onClick={reportIssue}>
+              <Icon name="alert" size={15} />
+              Report an issue
+            </button>
+          )}
           <button className="btn" onClick={() => zoomTo(a)}>
             <Icon name="target" size={15} />
             Zoom to area
@@ -461,11 +563,15 @@ export function DetailPanel({ area: a }: { area: Area }) {
           </>
         )}
 
-        {a.notes && (
-          <>
-            <h3 className="sec-t">Request notes</h3>
-            <div className="notes">{a.notes}</div>
-          </>
+        {admin ? (
+          <NotesEditor key={a.id} area={a} />
+        ) : (
+          a.notes && (
+            <>
+              <h3 className="sec-t">Notes</h3>
+              <div className="notes">{withLinks(a.notes)}</div>
+            </>
+          )
         )}
         {a.status !== "released" && (
           <>

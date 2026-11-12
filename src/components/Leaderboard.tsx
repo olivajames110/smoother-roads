@@ -2,7 +2,7 @@ import { CONFIG } from "../lib/config";
 import { useMemo } from "react";
 import { fmtDate, fmtN } from "../lib/format";
 import { coverageShort, issueCount } from "../lib/geo";
-import { CATS, P, STATUS } from "../lib/icons";
+import { CATS, P, STATUS, statusLabel } from "../lib/icons";
 import { SORTS, useStore } from "../lib/store";
 import type { SortBy } from "../lib/types";
 import { useVisible } from "../lib/useVisible";
@@ -61,6 +61,7 @@ export function Leaderboard() {
           >
             <option value="votes">Most votes</option>
             <option value="new">Newest</option>
+            <option value="old">Oldest</option>
             {CONFIG.database && <option value="issues">Most issues</option>}
           </select>
         </div>
@@ -98,7 +99,7 @@ export function Leaderboard() {
                     </td>
                     <td className="col-air mono mut">{a.icao || "—"}</td>
                     <td className="col-cov mono mut">{coverageShort(a.shape)}</td>
-                    <td className="col-status"><span className={"badge s-" + a.status}>{STATUS[a.status].label}</span></td>
+                    <td className="col-status"><span className={"badge s-" + a.status}>{statusLabel(a)}</span></td>
                     {CONFIG.database && <td className="col-cmt mono">
                       {issues > 0 ? (
                         <span className="issue-n">

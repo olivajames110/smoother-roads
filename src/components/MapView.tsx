@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { CONFIG } from "../lib/config";
 import { esc, fmtN } from "../lib/format";
 import { centerOf, wrapLon } from "../lib/geo";
-import { CATS, STATUS } from "../lib/icons";
+import { CATS, STATUS, sideColor, statusLabel } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area } from "../lib/types";
 import { useVisible } from "../lib/useVisible";
@@ -33,9 +33,10 @@ function clusterIcon(c: L.MarkerCluster) {
   });
 }
 
+// "Unable" pins are split: the left half red, the right half the reason's colour
 function pinIcon(a: Area, state: string) {
   return L.divIcon({
-    html: `<div class="pin ${state}" style="--sc:${STATUS[a.status].color}">${svgHtml(CATS[a.cat].icon, 16, 2.2)}</div>`,
+    html: `<div class="pin ${state}" style="--sc:${STATUS[a.status].color};--sc2:${sideColor(a)}">${svgHtml(CATS[a.cat].icon, 16, 2.2)}</div>`,
     className: "pin-wrap",
     iconSize: [34, 34],
     iconAnchor: [17, 17],
@@ -45,14 +46,14 @@ function pinIcon(a: Area, state: string) {
 const shapeStyle = (a: Area, on: boolean): L.PathOptions => ({
   color: STATUS[a.status].color,
   weight: on ? 3 : 2,
-  fillColor: STATUS[a.status].color,
+  fillColor: sideColor(a),
   fillOpacity: on ? 0.22 : 0.1,
   bubblingMouseEvents: false,
 });
 
 function tooltip(a: Area) {
   const votes = CONFIG.votes ? ` · ${fmtN(a.votes)} votes` : "";
-  return `${esc(a.name)}<span class="tt-sub">${STATUS[a.status].label}${votes}</span>`;
+  return `${esc(a.name)}<span class="tt-sub">${esc(statusLabel(a))}${votes}</span>`;
 }
 
 function requestMenu(map: L.Map, e: L.LeafletMouseEvent) {

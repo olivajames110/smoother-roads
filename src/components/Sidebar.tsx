@@ -10,6 +10,7 @@ export function Sidebar() {
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);
   const openSubmit = useStore((s) => s.openSubmit);
+  const beginRequest = useStore((s) => s.beginRequest);
   const collapsed = useStore((s) => s.sidebarCollapsed);
   const patch = useStore((s) => s.patch);
 
@@ -74,12 +75,14 @@ export function Sidebar() {
               </div>
             </div>
           )}
-          <SearchInput placeholder="Search by name, location…" />
-          <button className="btn fun block" onClick={openSubmit}>
-            <Icon d='<path d="M12 5v14M5 12h14"/>' size={16} weight={2.6} />
-            Request Area
-          </button>
-          <p className="sb-hint">Or right-click anywhere on the map</p>
+          <div className="search-add">
+            <SearchInput placeholder="Search city, region or country" />
+            <HoverTip className="ibtn-tip" tip="Request an area (or right-click the map)" place="below">
+              <button className="add-btn" aria-label="Request an area" onClick={() => beginRequest(openSubmit)}>
+                <Icon d='<path d="M12 5v14M5 12h14"/>' size={18} weight={2.6} />
+              </button>
+            </HoverTip>
+          </div>
           {CONFIG.leaderboard && (
             <nav className="seg full">
               <button className={view === "map" ? "on" : ""} onClick={() => setView("map")}>

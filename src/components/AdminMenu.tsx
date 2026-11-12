@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { setNoPhotogrammetry, setRegionHidden, setStatus, signOut } from "../lib/comments";
-import { STATUS } from "../lib/icons";
+import { REASONS, STATUS } from "../lib/icons";
 import { deleteRequest } from "../lib/requests";
 import { useStore } from "../lib/store";
-import type { Area, Status } from "../lib/types";
+import type { Area, Reason, Status } from "../lib/types";
 import { Icon } from "./Icon";
 
 // Admin options for one area, behind the ⋮ button next to Close
@@ -46,7 +46,7 @@ export function AdminMenu({ area: a }: { area: Area }) {
       {open && (
         <div className="pop" role="menu">
           <div className="pop-label">Status</div>
-          {(Object.keys(STATUS) as Status[]).map((s) => (
+          {(["requested", "progress", "released"] as Status[]).map((s) => (
             <button
               key={s}
               role="menuitemradio"
@@ -59,6 +59,26 @@ export function AdminMenu({ area: a }: { area: Area }) {
               {a.status === s && <Icon name="check" size={15} weight={2.4} />}
             </button>
           ))}
+          <div className="pop-label">Unable, because</div>
+          {(Object.keys(REASONS) as Reason[]).map((r) => {
+            const on = a.status === "unable" && (a.reason ?? "tried") === r;
+            return (
+              <button
+                key={r}
+                role="menuitemradio"
+                aria-checked={on}
+                className="pop-item"
+                onClick={() => run(() => setStatus(a.id, "unable", r), `Marked unable: ${REASONS[r].label.toLowerCase()}`)}
+              >
+                <span
+                  className="sdot"
+                  style={{ background: `linear-gradient(90deg, ${STATUS.unable.color} 50%, ${REASONS[r].color} 50%)` }}
+                />
+                {REASONS[r].label}
+                {on && <Icon name="check" size={15} weight={2.4} />}
+              </button>
+            );
+          })}
           <div className="pop-sep" />
           <button
             role="menuitemcheckbox"

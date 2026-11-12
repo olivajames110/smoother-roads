@@ -1,9 +1,10 @@
 export type LatLng = [number, number];
 export type Cat = "city" | "town" | "airport" | "mountain" | "coastal" | "race" | "island";
-export type Status = "requested" | "progress" | "released" | "unable" | "alternative";
+export type Status = "requested" | "progress" | "released" | "unable";
+export type Reason = "alternative" | "no-photogrammetry" | "tried"; // Why an area is "unable"
 export type CommentType = "feedback" | "issue" | "question";
-export type GroupBy = "country" | "az" | "votes" | "new" | "status";
-export type SortBy = "votes" | "new" | "issues";
+export type GroupBy = "country" | "az" | "votes" | "new" | "old" | "status";
+export type SortBy = "votes" | "new" | "old" | "issues";
 
 export type Shape =
   | { type: "circle"; center: LatLng; radius: number } // radius in metres
@@ -50,6 +51,7 @@ export interface Area {
   cat: Cat;
   noPhotogrammetry?: boolean;
   status: Status;
+  reason?: Reason; // Only for "unable"
   votes: number;
   voted: boolean;
   by: string;

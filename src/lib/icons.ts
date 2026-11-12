@@ -23,11 +23,24 @@ export const STATUS = {
   requested:{label:'Requested',color:'#7c3aed',tint:'#f3eefe',ink:'#6d28d9'},
   progress:{label:'In progress',color:'#d97706',tint:'#fef3e2',ink:'#b45309'},
   released:{label:'Released',color:'#16a34a',tint:'#e7f6ec',ink:'#15803d'},
-  unable:{label:"Sorry, tried but unable :(",color:'#dc2626',tint:'#fdecec',ink:'#b42318'},
-  alternative:{label:"Better option available",color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490'},
+  unable:{label:'Unable',color:'#dc2626',tint:'#fdecec',ink:'#b42318'},
 };
+// Why an "Unable" area can't be done. Its marker is half red, half the reason's colour.
+export const REASONS = {
+  alternative:{label:'Alternative available',color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490',
+    note:"I couldn't cover this one, but there's a better alternative already available."},
+  'no-photogrammetry':{label:'No photogrammetry',color:'#eab308',tint:'#fef9c3',ink:'#a16207',
+    note:"This area has no photogrammetry, so smoothing can't make a real difference here."},
+  tried:{label:'Tried, didn\'t work',color:'#dc2626',tint:'#fdecec',ink:'#b42318',
+    note:"I tried, but couldn't get this one drivable."},
+};
+export type Reason = keyof typeof REASONS;
+// What an area's status reads as: "Unable · No photogrammetry"
+export const statusLabel = (a: { status: keyof typeof STATUS; reason?: Reason }) =>
+  a.status === "unable" ? `Unable · ${REASONS[a.reason ?? "tried"].label}` : STATUS[a.status].label;
 // Shown in the area panel and the list tooltip for statuses that need explaining
-export const STATUS_NOTE: Partial<Record<keyof typeof STATUS, string>> = {
-  unable: "I have tried, but unfortunately I can't cover this one.",
-  alternative: "I wasn't able to cover this one, but there's a better alternative already available.",
-};
+export const statusNote = (a: { status: keyof typeof STATUS; reason?: Reason }) =>
+  a.status === "unable" ? REASONS[a.reason ?? "tried"].note : undefined;
+// The second colour of an area's marker (the reason's), or its status colour
+export const sideColor = (a: { status: keyof typeof STATUS; reason?: Reason }) =>
+  a.status === "unable" ? REASONS[a.reason ?? "tried"].color : STATUS[a.status].color;

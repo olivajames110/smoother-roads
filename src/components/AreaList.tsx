@@ -1,12 +1,13 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CONFIG } from "../lib/config";
 import { fmtN, norm } from "../lib/format";
-import { STATUS, STATUS_NOTE } from "../lib/icons";
+import { STATUS, sideColor, statusLabel, statusNote } from "../lib/icons";
 import { SORTS, useStore } from "../lib/store";
 import type { Area, GroupBy, Status } from "../lib/types";
 import { useVisible } from "../lib/useVisible";
 import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
+import { StatusFilter } from "./Legend";
 
 interface Group {
   key: string;
@@ -15,8 +16,7 @@ interface Group {
   items: Area[];
 }
 
-const STATUS_ORDER: Status[] = ["requested", "progress", "released", "unable", "alternative"];
-const RELEASED_KEY = "sr-released-only";
+const STATUS_ORDER: Status[] = ["requested", "progress", "released", "unable"];
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const byName = (a: Area, b: Area) => a.name.localeCompare(b.name);
@@ -69,10 +69,10 @@ function AreaItem({ area: a }: { area: Area }) {
     >
       <HoverTip
         className="sdot item-dot"
-        label={status.label}
-        tip={STATUS_NOTE[a.status] ?? status.label}
+        label={statusLabel(a)}
+        tip={statusNote(a) ? `${statusLabel(a)}: ${statusNote(a)}` : status.label}
         place="above"
-        style={{ background: status.color }}
+        style={{ background: `linear-gradient(90deg, ${status.color} 50%, ${sideColor(a)} 50%)` }}
       />
       <div className="item-main">
         <div className="item-head">
@@ -130,67 +130,114 @@ function AreaItem({ area: a }: { area: Area }) {
   );
 }
 
+// How the list is grouped or sorted: the title is the button, the choices drop down beneath it
+const VIEWS: { key: GroupBy; label: string; icon: string; section: "Group" | "Sort" }[] = [
+  { key: "country", label: "Countries", section: "Group",
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>' },
+  { key: "az", label: "A–Z", section: "Group", icon: '<path d="M4 18 8 6l4 12M5.5 14h5M14 6h6l-6 12h6"/>' },
+  { key: "status", label: "Status", section: "Group", icon: '<circle cx="7" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/>' },
+  { key: "votes", label: "Top voted", section: "Sort", icon: '<path d="M12 4 4 13h5v7h6v-7h5z"/>' },
+  { key: "new", label: "Newest", section: "Sort", icon: '<path d="M12 5v14M6 13l6 6 6-6"/>' },
+  { key: "old", label: "Oldest", section: "Sort", icon: '<path d="M12 19V5M6 11l6-6 6 6"/>' },
+];
+
+function ViewMenu({ group, count, onPick }: { group: GroupBy; count: number; onPick: (g: GroupBy) => void }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const current = VIEWS.find((v) => v.key === group) ?? VIEWS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  const shown = VIEWS.filter((v) => v.key !== "votes" || CONFIG.votes);
+  return (
+    <div className="view-menu" ref={box}>
+      <button
+        className={"view-btn" + (open ? " open" : "")}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Group or sort the list"
+        onClick={() => setOpen(!open)}
+      >
+        {current.label} <span className="vc">({count})</span>
+        <Icon d='<path d="m6 9 6 6 6-6"/>' size={16} weight={2.4} />
+      </button>
+      {open && (
+        <div className="pop view-pop" role="menu">
+          {(["Group", "Sort"] as const).map((sec) => (
+            <div key={sec}>
+              {sec === "Sort" && <div className="pop-sep" />}
+              <div className="pop-label">{sec === "Group" ? "Group by" : "Sort by"}</div>
+              {shown
+                .filter((v) => v.section === sec)
+                .map((v) => (
+                  <button
+                    key={v.key}
+                    role="menuitemradio"
+                    aria-checked={v.key === group}
+                    className={"pop-item" + (v.key === group ? " on" : "")}
+                    onClick={() => {
+                      onPick(v.key);
+                      setOpen(false);
+                    }}
+                  >
+                    <Icon d={v.icon} size={15} />
+                    {v.label}
+                    {v.key === group && <Icon name="check" size={15} weight={2.4} />}
+                  </button>
+                ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AreaList() {
   const group = useStore((s) => s.group);
   const collapsed = useStore((s) => s.collapsed);
   const patch = useStore((s) => s.patch);
   const toggleGroup = useStore((s) => s.toggleGroup);
   const loaded = useStore((s) => s.loaded);
-  const all = useVisible(true);
-  const [releasedOnly, setReleasedOnly] = useState(() => {
-    try {
-      return localStorage.getItem(RELEASED_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-  const list = useMemo(() => (releasedOnly ? all.filter((a) => a.status === "released") : all), [all, releasedOnly]);
-  const toggleReleased = (on: boolean) => {
-    setReleasedOnly(on);
-    try {
-      localStorage.setItem(RELEASED_KEY, on ? "1" : "0");
-    } catch {
-      /* private window */
-    }
-  };
-  const opt = (value: GroupBy, label: string) => (
-    <option value={value}>{value === group ? `${label} (${list.length})` : label}</option>
-  );
-
-  const flat = group === "votes" || group === "new";
+  const list = useVisible(true);
+  const photoOnly = useStore((s) => s.photoOnly);
+  const setGroups = useStore((s) => s.setGroups);
+  const hiddenCount = useStore((s) => s.hidden.size) + (photoOnly ? 1 : 0);
+  const flat = group === "votes" || group === "new" || group === "old";
   const groups = useMemo(() => (flat ? [] : buildGroups(list, group)), [flat, list, group]);
   const items = useMemo(
-    () => (flat ? [...list].sort(SORTS[group === "new" ? "new" : "votes"]) : []),
+    () => (flat ? [...list].sort(SORTS[group as "votes" | "new" | "old"]) : []),
     [flat, list, group],
   );
+  const groupIds = groups.map((g) => `${group}:${g.key}`);
+  const anyOpen = groupIds.some((id) => !collapsed.has(id));
 
   return (
     <>
       <div className="list-head">
-        <label className="title-sel" title="Change how the list is grouped">
-          <select
-            aria-label="Group list by"
-            value={group}
-            onChange={(e) => patch({ group: e.target.value as GroupBy })}
-          >
-            {opt("country", "Countries")}
-            {opt("az", "A–Z")}
-            {CONFIG.votes && opt("votes", "Top voted")}
-            {opt("new", "Newest")}
-            {opt("status", "By status")}
-          </select>
-          <Icon d='<path d="m6 9 6 6 6-6"/>' size={16} weight={2.4} />
-        </label>
-        <div className="seg" role="group" aria-label="Show">
-          <button className={releasedOnly ? "" : "on"} aria-pressed={!releasedOnly} onClick={() => toggleReleased(false)}>
-            All
+        <ViewMenu group={group} count={list.length} onPick={(g) => patch({ group: g })} />
+        {groups.length > 1 && (
+          <button className="fold-all" onClick={() => setGroups(groupIds, anyOpen)}>
+            <Icon
+              d={anyOpen ? '<path d="m7 20 5-5 5 5M7 4l5 5 5-5"/>' : '<path d="m7 15 5 5 5-5M7 9l5-5 5 5"/>'}
+              size={14}
+              weight={2.2}
+            />
+            {anyOpen ? "Collapse all" : "Expand all"}
           </button>
-          <button className={releasedOnly ? "on" : ""} aria-pressed={releasedOnly} onClick={() => toggleReleased(true)}>
-            <span className="sdot" style={{ background: STATUS.released.color }} />
-            Released
-          </button>
-        </div>
+        )}
       </div>
+      <StatusFilter />
 
       {group === "az" && (
         <div className="az-bar">
@@ -209,8 +256,8 @@ export function AreaList() {
       {list.length === 0 && (
         <div className="empty">{!loaded
             ? "Loading…"
-            : releasedOnly
-              ? "No released areas match. Try another search, or switch to All."
+            : hiddenCount
+              ? "No areas match. Try another search, or loosen the filters above."
               : "No areas match. Try another search, or request this area."}</div>
       )}
 

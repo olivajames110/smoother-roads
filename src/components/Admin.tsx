@@ -11,8 +11,8 @@ import {
 } from "../lib/comments";
 import { loadAreas } from "../lib/data";
 import { ago } from "../lib/format";
-import { STATUS } from "../lib/icons";
-import type { Area, AreaComment, Status } from "../lib/types";
+import { REASONS, STATUS } from "../lib/icons";
+import type { Area, AreaComment, Reason, Status } from "../lib/types";
 import { withLinks } from "./LinkedText";
 
 function Reply({ area, to, onDone }: { area: Area; to: string; onDone: () => void }) {
@@ -154,12 +154,20 @@ export function Admin() {
             <select
               className="input"
               aria-label={"Status of " + a.name}
-              value={a.status}
-              onChange={(e) => run(setStatus(a.id, e.target.value as Status))}
+              value={a.status === "unable" ? "unable:" + (a.reason ?? "tried") : a.status}
+              onChange={(e) => {
+                const [s, r] = e.target.value.split(":") as [Status, Reason | undefined];
+                run(setStatus(a.id, s, r));
+              }}
             >
-              {(Object.keys(STATUS) as Status[]).map((s) => (
+              {(["requested", "progress", "released"] as Status[]).map((s) => (
                 <option key={s} value={s}>
                   {STATUS[s].label}
+                </option>
+              ))}
+              {(Object.keys(REASONS) as Reason[]).map((r) => (
+                <option key={r} value={"unable:" + r}>
+                  Unable · {REASONS[r].label}
                 </option>
               ))}
             </select>

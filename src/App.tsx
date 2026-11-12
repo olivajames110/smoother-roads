@@ -8,6 +8,7 @@ import { MapHint } from "./components/MapHint";
 import { MapView } from "./components/MapView";
 import { Gallery, Lightbox, Toast } from "./components/Overlays";
 import { Panel } from "./components/Panel";
+import { RequestIntro } from "./components/RequestIntro";
 import { Sidebar } from "./components/Sidebar";
 import { useStore } from "./lib/store";
 
@@ -16,6 +17,7 @@ export function App() {
   const sidebarCollapsed = useStore((s) => s.sidebarCollapsed);
   const patch = useStore((s) => s.patch);
   const openSubmit = useStore((s) => s.openSubmit);
+  const beginRequest = useStore((s) => s.beginRequest);
   const admin = useStore((s) => s.admin);
   const adminAction = useStore((s) => s.adminAction);
 
@@ -56,7 +58,7 @@ export function App() {
               <button className="fab fab-menu" title="Open list" onClick={() => patch({ sidebarOpen: true })}>
                 <Icon d='<path d="M4 6h16M4 12h16M4 18h16"/>' size={18} weight={2.2} />
               </button>
-              <button className="fab fab-submit" title="Request Area" onClick={openSubmit}>
+              <button className="fab fab-submit" title="Request Area" onClick={() => beginRequest(openSubmit)}>
                 <Icon d='<path d="M12 5v14M5 12h14"/>' size={16} weight={2.6} />
               </button>
               {admin && (
@@ -75,6 +77,7 @@ export function App() {
       <Lightbox />
       <Gallery />
       <Toast />
+      <RequestIntro />
     </div>
   );
 }
