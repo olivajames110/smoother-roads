@@ -8,6 +8,7 @@ import { CATS, REASONS, STATUS, statusNote } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
 import { AdminMenu } from "./AdminMenu";
+import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
 import { formatNotes, withLinks } from "./LinkedText";
 import { Photos } from "./Photos";
@@ -611,21 +612,56 @@ export function DetailPanel({ area: a }: { area: Area }) {
 
         <div className="actions">
           {CONFIG.database && (
-            <button className="btn report-btn" onClick={() => openAs("issue")}>
-              <Icon name="alert" size={15} />
-              <span className="bl">Report issue</span>
-            </button>
+            <HoverTip
+              className="act-tip"
+              place="below"
+              tip={
+                <>
+                  <span className="tip-t">Report an issue</span>
+                  <span className="tip-d">Something here is broken or worse than it should be.</span>
+                  <span className="tip-e">e.g. a sudden bump, a hole, or a road floating above the ground</span>
+                </>
+              }
+            >
+              <button className="btn report-btn" onClick={() => openAs("issue")}>
+                <Icon name="alert" size={15} />
+                <span className="bl">Report issue</span>
+              </button>
+            </HoverTip>
           )}
           {CONFIG.database && (
-            <button className="btn improve-btn" onClick={() => openAs("improve")}>
-              <Icon d='<path d="M4 21 9 3M20 21 15 3M12 5v2.5M12 10.5V13M12 16v3"/>' size={15} weight={2.2} />
-              <span className="bl">Request improvement</span>
-            </button>
+            <HoverTip
+              className="act-tip"
+              place="below"
+              tip={
+                <>
+                  <span className="tip-t">Request improvement</span>
+                  <span className="tip-d">Ask for a road or spot here to be made smoother.</span>
+                  <span className="tip-e">e.g. a street that's still too rough to drive</span>
+                </>
+              }
+            >
+              <button className="btn improve-btn" onClick={() => openAs("improve")}>
+                <Icon d='<path d="M4 21 9 3M20 21 15 3M12 5v2.5M12 10.5V13M12 16v3"/>' size={15} weight={2.2} />
+                <span className="bl">Request improvement</span>
+              </button>
+            </HoverTip>
           )}
-          <button className="btn" onClick={() => zoomTo(a)}>
-            <Icon name="target" size={15} />
-            <span className="bl">Go to area</span>
-          </button>
+          <HoverTip
+            className="act-tip"
+            place="below-end"
+            tip={
+              <>
+                <span className="tip-t">Go to area</span>
+                <span className="tip-d">Moves the map to show this whole area.</span>
+              </>
+            }
+          >
+            <button className="btn" onClick={() => zoomTo(a)}>
+              <Icon name="target" size={15} />
+              <span className="bl">Go to area</span>
+            </button>
+          </HoverTip>
         </div>
         {admin && (
           <div className="actions admin-row">
