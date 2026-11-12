@@ -12,6 +12,7 @@ import { svgHtml } from "./Icon";
 
 const ACCENT = "#2563eb";
 const ISSUE = "#dc2626";
+const IMPROVE = "#16a34a";
 const SHAPES_MIN_ZOOM = 7;
 
 interface Layers {
@@ -240,7 +241,10 @@ export function MapView() {
     if (spot) dot(spot, ISSUE);
     if (!CONFIG.database) return;
     for (const c of selected?.comments ?? []) {
-      if (c.pin) dot(c.pin, c.type === "issue" ? ISSUE : ACCENT).bindTooltip(esc(c.author), { direction: "top" });
+      if (c.pin)
+        dot(c.pin, c.type === "issue" ? ISSUE : c.type === "improve" ? IMPROVE : ACCENT).bindTooltip(esc(c.author), {
+          direction: "top",
+        });
     }
     if (commentPin) dot(commentPin, ACCENT);
   }, [selected, commentPin, spot]);

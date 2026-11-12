@@ -9,10 +9,22 @@ import { useStore } from "../lib/store";
 import type { Area, AreaComment, CommentType } from "../lib/types";
 import { AdminMenu } from "./AdminMenu";
 import { Icon } from "./Icon";
-import { withLinks } from "./LinkedText";
+import { formatNotes, withLinks } from "./LinkedText";
 import { Photos } from "./Photos";
 
-const COMMENT_TYPES: Record<CommentType, string> = { feedback: "Feedback", issue: "Issue", question: "Question" };
+const COMMENT_TYPES: Record<CommentType, string> = {
+  feedback: "Feedback",
+  issue: "Issue",
+  improve: "Improve",
+  question: "Question",
+};
+// What the text box asks for, per type
+const PROMPTS: Record<CommentType, { label: string; hint: string }> = {
+  feedback: { label: "Comment", hint: "Share your thoughts…" },
+  issue: { label: "Issue", hint: "What's wrong, and where?" },
+  improve: { label: "Improvement", hint: "Which roads or spot should be smoother?" },
+  question: { label: "Question", hint: "Share your thoughts…" },
+};
 
 // Admin: the area's notes, editable in place (saved to the database, shown to everyone)
 function NotesEditor({ area: a }: { area: Area }) {
@@ -20,10 +32,30 @@ function NotesEditor({ area: a }: { area: Area }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(a.notes);
   const [saving, setSaving] = useState(false);
+  const box = useRef<HTMLTextAreaElement>(null);
 
   const start = () => {
     setText(a.notes);
     setEditing(true);
+  };
+
+  // Wraps the selected text in ** (bold) or __ (underline), or takes it off again
+  const wrap = (mark: string) => {
+    const el = box.current;
+    if (!el) return;
+    const { selectionStart: s, selectionEnd: e } = el;
+    const sel = text.slice(s, e);
+    const on = text.slice(s - mark.length, s) === mark && text.slice(e, e + mark.length) === mark;
+    const next = on
+      ? text.slice(0, s - mark.length) + sel + text.slice(e + mark.length)
+      : text.slice(0, s) + mark + (sel || "text") + mark + text.slice(e);
+    setText(next);
+    const from = on ? s - mark.length : s + mark.length;
+    const to = from + (sel || (on ? "" : "text")).length;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(from, to);
+    });
   };
   const save = async () => {
     setSaving(true);
@@ -45,19 +77,40 @@ function NotesEditor({ area: a }: { area: Area }) {
       </h3>
       {editing ? (
         <div className="notes-edit">
+          <div className="fmt-bar">
+            <button type="button" title="Bold (Ctrl+B)" onMouseDown={(e) => e.preventDefault()} onClick={() => wrap("**")}>
+              <b>B</b>
+            </button>
+            <button type="button" title="Underline (Ctrl+U)" onMouseDown={(e) => e.preventDefault()} onClick={() => wrap("__")}>
+              <u>U</u>
+            </button>
+            <span className="fmt-hint">**bold** · __underline__ · new lines are kept</span>
+          </div>
           <textarea
+            ref={box}
             value={text}
-            rows={5}
+            rows={6}
             autoFocus
             placeholder="Notes everyone sees on this area"
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
+              const mod = e.ctrlKey || e.metaKey;
               if (e.key === "Escape") {
                 e.stopPropagation();
                 setEditing(false);
-              } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) save();
+              } else if (e.key === "Enter" && mod) save();
+              else if (mod && (e.key === "b" || e.key === "u")) {
+                e.preventDefault();
+                wrap(e.key === "b" ? "**" : "__");
+              }
             }}
           />
+          {text.trim() && (
+            <div className="notes notes-preview">
+              <span className="pv">Preview</span>
+              {formatNotes(text.trim())}
+            </div>
+          )}
           <div className="notes-edit-btns">
             <span className="hint">Ctrl+Enter to save</span>
             <button className="btn sm" disabled={saving} onClick={() => setEditing(false)}>
@@ -69,7 +122,7 @@ function NotesEditor({ area: a }: { area: Area }) {
           </div>
         </div>
       ) : a.notes ? (
-        <div className="notes">{withLinks(a.notes)}</div>
+        <div className="notes">{a.notesAdmin ? formatNotes(a.notes) : a.notes}</div>
       ) : (
         <div className="notes empty-notes">No notes yet</div>
       )}
@@ -191,7 +244,7 @@ function Compose() {
       {(Object.keys(COMMENT_TYPES) as CommentType[]).map((t) => (
         <button
           key={t}
-          className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" ? " issue" : "")}
+          className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" || t === "improve" ? " " + t : "")}
           onClick={() => {
             setComment({ type: t });
             if (!open) expand();
@@ -208,7 +261,7 @@ function Compose() {
       <div className="compose collapsed">
         <div className="compose-top">{chips}</div>
         <button className={"compose-open" + (comment.text ? " draft" : "")} onClick={expand}>
-          {comment.text || (comment.type === "issue" ? "What's wrong, and where?" : "Share your thoughts…")}
+          {comment.text || PROMPTS[comment.type].hint}
         </button>
       </div>
     );
@@ -241,12 +294,12 @@ function Compose() {
         )}
       </div>
       <label className="lbl cmt-lbl" htmlFor="cmt-text">
-        {comment.type === "issue" ? "Issue" : comment.type === "question" ? "Question" : "Comment"}
+        {PROMPTS[comment.type].label}
       </label>
       <textarea
         id="cmt-text"
         ref={box}
-        placeholder={comment.type === "issue" ? "What's wrong, and where?" : "Share your thoughts…"}
+        placeholder={PROMPTS[comment.type].hint}
         maxLength={2000}
         value={comment.text}
         onChange={(e) => setComment({ text: e.target.value })}
@@ -438,9 +491,10 @@ export function DetailPanel({ area: a }: { area: Area }) {
   const voted = CONFIG.votes && a.voted;
   const setComment = useStore((s) => s.setComment);
   const patch = useStore((s) => s.patch);
-  // Opens the comment box set to "Issue", ready to describe it and mark the spot on the map
-  const reportIssue = () => {
-    setComment({ type: "issue" });
+  // Opens the comment box set to a type ("Issue", "Improve"), ready to describe it and mark the
+  // spot on the map
+  const openAs = (type: CommentType) => {
+    setComment({ type });
     patch({ composeNonce: useStore.getState().composeNonce + 1 });
   };
 
@@ -513,36 +567,46 @@ export function DetailPanel({ area: a }: { area: Area }) {
             </div>
           )}
           {CONFIG.votes && (
-            <div className="stat">
+            // The votes box is the upvote button: click to vote, click again to take it back
+            <button
+              className={"stat vote-stat" + (voted ? " on" : "")}
+              aria-pressed={!!voted}
+              title={voted ? "Remove your upvote" : "Upvote this area"}
+              onClick={() => toggleVote(a.id)}
+            >
               <div className="k">Votes</div>
-              <div className="v">{fmtN(a.votes)}</div>
-            </div>
+              <div className="v">
+                <Icon name="up" size={16} weight={2.2} />
+                {fmtN(a.votes)}
+              </div>
+              <span className="v2">{voted ? "Upvoted" : "Click to upvote"}</span>
+            </button>
           )}
         </div>
 
         <div className="actions">
-          <span className="tip" data-tip={CONFIG.votes ? undefined : "Coming soon"}>
-            <button
-              className={"btn" + (voted ? " voted" : " cyan")}
-              disabled={!CONFIG.votes}
-              onClick={() => toggleVote(a.id)}
-            >
-              <Icon name="up" size={15} weight={2} />
-              {voted ? "Upvoted" : "Upvote"}
-            </button>
-          </span>
           {CONFIG.database && (
-            <button className="btn report-btn" onClick={reportIssue}>
+            <button className="btn report-btn" onClick={() => openAs("issue")}>
               <Icon name="alert" size={15} />
-              Report an issue
+              <span className="bl">Report issue</span>
+            </button>
+          )}
+          {CONFIG.database && (
+            <button className="btn improve-btn" onClick={() => openAs("improve")}>
+              <Icon d='<path d="M4 21 9 3M20 21 15 3M12 5v2.5M12 10.5V13M12 16v3"/>' size={15} weight={2.2} />
+              <span className="bl">Request improvement</span>
             </button>
           )}
           <button className="btn" onClick={() => zoomTo(a)}>
             <Icon name="target" size={15} />
-            Zoom to area
+            <span className="bl">Go to area</span>
           </button>
-          {admin && <CopyRow area={a} />}
         </div>
+        {admin && (
+          <div className="actions admin-row">
+            <CopyRow area={a} />
+          </div>
+        )}
 
         {CONFIG.database && CONFIG.photos && <Photos area={a} />}
 
@@ -569,7 +633,7 @@ export function DetailPanel({ area: a }: { area: Area }) {
           a.notes && (
             <>
               <h3 className="sec-t">Notes</h3>
-              <div className="notes">{withLinks(a.notes)}</div>
+              <div className="notes">{a.notesAdmin ? formatNotes(a.notes) : a.notes}</div>
             </>
           )
         )}

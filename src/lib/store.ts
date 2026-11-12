@@ -323,7 +323,9 @@ export const useStore = create<Store>((set, get) => {
           get().showToast(
             String((e as Error).message).includes("rate_limited")
               ? "You're posting quite fast. Please try again later."
-              : "Couldn't post your comment. Please try again.",
+              : get().admin && String((e as Error).message).includes("type_check")
+                ? "Run supabase/013_improve_comments.sql in Supabase first"
+                : "Couldn't post your comment. Please try again.",
             true,
           );
         } finally {

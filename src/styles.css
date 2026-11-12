@@ -220,7 +220,7 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .lg-hint{color:var(--faint);font-size:11.5px;margin-left:6px;white-space:nowrap}
 
 /* panel */
-.panel{position:absolute;top:12px;right:12px;bottom:12px;width:440px;z-index:1002;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;transform:translateX(calc(100% + 24px));transition:transform .3s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+.panel{position:absolute;top:12px;right:12px;bottom:12px;width:500px;z-index:1002;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;transform:translateX(calc(100% + 24px));transition:transform .3s cubic-bezier(.2,.8,.2,1);overflow:hidden}
 .panel.open{transform:none}
 .panel-head{padding:18px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--line);position:relative}
 .panel-head .tile{width:46px;height:46px;border-radius:13px}
@@ -266,11 +266,28 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .stat .k{font-size:12px;color:var(--mut);margin-bottom:3px;font-weight:500}
 .stat .v{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
 .stat .v2{display:block;margin-top:2px;font-size:12px;font-weight:500;color:var(--mut);white-space:nowrap}
-.actions{display:flex;flex-wrap:wrap;gap:8px}
-.actions .btn{flex:1}
+/* votes box doubles as the upvote button */
+.vote-stat{border:1px solid transparent;text-align:left;color:var(--tx);font:inherit;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.vote-stat .v{display:flex;align-items:center;gap:5px}
+.vote-stat .v svg{color:var(--mut)}
+.vote-stat:hover{background:var(--accent-soft);border-color:var(--accent-line)}
+.vote-stat:hover .v svg{color:var(--accent)}
+.vote-stat.on{background:var(--accent-soft);border-color:var(--accent-line)}
+.vote-stat.on .v,.vote-stat.on .v svg{color:var(--accent-h)}
+.vote-stat.on .v svg{fill:currentColor}
+.vote-stat:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Report issue, Request improvement and Zoom to area always share one row; labels shorten
+   with "…" before anything wraps */
+.actions{display:flex;flex-wrap:nowrap;gap:6px}
+.actions .btn{flex:1 1 auto;min-width:0;padding:0 9px;gap:5px;font-size:12.5px}
+.actions .btn svg{flex:none}
+.actions .bl{overflow:hidden;text-overflow:ellipsis}
+.actions.admin-row{margin-top:8px}
 .actions .btn.copy-row{flex:1 1 100%}
 .actions .report-btn{color:#b42318}
 .actions .report-btn:hover{background:#fdecec;border-color:#f5c2c0}
+.actions .improve-btn{color:#15803d}
+.actions .improve-btn:hover{background:#e7f6ec;border-color:#b7e2c4}
 .tip{flex:1;display:flex;position:relative}
 .request-menu .leaflet-popup-content-wrapper{padding:0;border-radius:11px;background:none;box-shadow:var(--shadow)}
 .request-menu .leaflet-popup-content{margin:0;line-height:1}
@@ -316,6 +333,7 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .t-feedback{background:var(--soft-2);color:#344054}
 .t-issue{background:#fdecec;color:#b42318}
 .t-question{background:var(--accent-soft);color:var(--accent-h)}
+.t-improve{background:#e7f6ec;color:#15803d}
 .dev{font-size:10.5px;font-weight:700;background:var(--dark);color:#fff;padding:2px 6px;border-radius:5px;letter-spacing:.03em}
 .cmt-img{display:block;margin-top:8px;max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}
 .link{border:0;background:transparent;padding:0;margin-top:8px;color:var(--accent);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
@@ -342,6 +360,7 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .chip:hover{color:var(--tx);border-color:var(--faint)}
 .chip.on{background:var(--dark);color:#fff;border-color:var(--dark)}
 .chip.on.issue{background:var(--issue);border-color:var(--issue);color:#fff}
+.chip.on.improve{background:var(--released);border-color:var(--released);color:#fff}
 .compose.collapsed{padding:12px 14px}
 .compose.collapsed .compose-top{margin-bottom:10px}
 .compose-open{width:100%;height:42px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--faint);font-size:14px;text-align:left;cursor:text;transition:border-color .15s}
@@ -504,7 +523,7 @@ tbody tr:hover{background:var(--soft)}
 .wm-2{font-weight:700;font-size:24px;letter-spacing:.05em;color:var(--tx);margin-top:1px}
 /* responsive */
 @container app (max-width: 1100px){ .legend{display:none} }
-@container app (max-width: 960px){ .panel{width:390px} .kpis{grid-template-columns:repeat(2,1fr)} }
+@container app (max-width: 960px){ .panel{width:420px} .kpis{grid-template-columns:repeat(2,1fr)} }
 @container app (max-width: 860px){
   .map-view{--sb-w:300px}
   .map-view,.map-view.sb-toggled{grid-template-columns:1fr}
@@ -542,7 +561,15 @@ tbody tr:hover{background:var(--soft)}
 .notes-edit textarea{width:100%;min-height:110px;height:auto;padding:10px 12px;line-height:1.5;resize:vertical;font:inherit}
 .notes-edit-btns{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}
 .notes-edit-btns .hint{margin-right:auto;font-size:12px;color:var(--faint)}
-.empty-notes{color:var(--faint);font-style:italic}
+.empty-notes{color:var(--faint);font-style:italic;font-weight:400}
+.notes{white-space:pre-wrap;overflow-wrap:anywhere}
+.notes strong{font-weight:700}
+.fmt-bar{display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.fmt-bar button{width:28px;height:28px;border:1px solid var(--line-2);border-radius:7px;background:var(--surface);color:var(--tx);font-size:13px;cursor:pointer}
+.fmt-bar button:hover{background:var(--soft)}
+.fmt-hint{margin-left:6px;font-size:11.5px;color:var(--faint)}
+.notes-preview{margin-top:8px;border:1px dashed var(--line-2);background:transparent}
+.notes-preview .pv{display:block;margin-bottom:4px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);white-space:normal}
 .notes + .by{margin-top:8px}
 .panel.open ~ .map-hint{left:calc((100% - 464px) / 2)}
 .panel.open ~ .fab-submit{display:none}

@@ -2,7 +2,7 @@ export type LatLng = [number, number];
 export type Cat = "city" | "town" | "airport" | "mountain" | "coastal" | "race" | "island";
 export type Status = "requested" | "progress" | "released" | "unable";
 export type Reason = "alternative" | "no-photogrammetry" | "tried"; // Why an area is "unable"
-export type CommentType = "feedback" | "issue" | "question";
+export type CommentType = "feedback" | "issue" | "improve" | "question";
 export type GroupBy = "country" | "az" | "votes" | "new" | "old" | "status";
 export type SortBy = "votes" | "new" | "old" | "issues";
 
@@ -57,6 +57,7 @@ export interface Area {
   by: string;
   date: number;
   notes: string;
+  notesAdmin?: boolean; // Notes written by the admin: shown with bold, underline and links
   shape: Shape;
   comments: AreaComment[];
   photos?: AreaPhoto[]; // In display order

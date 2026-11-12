@@ -132,6 +132,8 @@ export async function loadAreas(withHidden = false): Promise<Area[]> {
         hidden: statuses.get(a.id)?.hidden,
         noPhotogrammetry: statuses.get(a.id)?.noPhotogrammetry ?? a.noPhotogrammetry,
         notes: statuses.get(a.id)?.notes ?? a.notes,
+        // only the admin can write these, so only they get formatting and clickable links
+        notesAdmin: statuses.get(a.id)?.notes != null,
         comments: (comments.get(a.id) ?? []).filter((c) => withHidden || !c.hidden),
         photos: photos.get(a.id) ?? [],
       }))
