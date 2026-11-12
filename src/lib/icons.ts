@@ -30,7 +30,9 @@ export const REASONS = {
   alternative:{label:'Alternative available',color:'#0891b2',tint:'#e0f5fa',ink:'#0e7490',
     note:"I couldn't cover this one, but there's a better alternative already available."},
   'no-photogrammetry':{label:'No photogrammetry',color:'#eab308',tint:'#fef9c3',ink:'#a16207',
-    note:"This area has no photogrammetry, so smoothing can't make a real difference here."},
+    // the message box is red (the badge and marker stay yellow)
+    noteTint:'#fdecec',noteInk:'#b42318',
+    note:"Sorry, this area isn't covered by photogrammetry, so it doesn't meet the requirements for smoothing roads across the whole area.\n\nIf you have serious interest in improving any current existing areas and would like for me to give it a try, click \"Request improvement\" below and mark one small, specific spot that needs flattening, and I'll try it as a test."},
   tried:{label:'Tried, didn\'t work',color:'#dc2626',tint:'#fdecec',ink:'#b42318',
     note:"I tried, but couldn't get this one drivable."},
 };

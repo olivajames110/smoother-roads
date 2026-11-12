@@ -95,6 +95,8 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .votes-pill.on{color:var(--accent-h);background:var(--accent-soft);border-color:var(--accent-line)}
 .votes-pill.on svg,.vote.on svg,.btn.voted svg{fill:currentColor}
 .empty{padding:28px 12px;text-align:center;color:var(--mut);font-size:13px;line-height:1.55}
+/* empty feedback: a soft rounded box, like the notes */
+.empty-box{background:var(--soft);border-radius:12px}
 
 /* title dropdown */
 .list-head{display:flex;align-items:center;gap:2px;margin:0 2px 8px}
@@ -249,7 +251,7 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .s-released{color:#15803d;background:#e7f6ec}
 .s-unable{color:#b42318;background:#fdecec}
 .s-alternative{color:#0e7490;background:#e0f5fa}
-.status-note{margin-bottom:14px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5}
+.status-note{margin-bottom:14px;padding:10px 12px;border-radius:10px;font-size:13px;line-height:1.5;white-space:pre-line}
 .badge.cat-b{color:var(--mut);background:var(--soft)}
 .badge.cat-b::before{display:none}
 .panel-body{flex:1;overflow:auto;padding:18px}

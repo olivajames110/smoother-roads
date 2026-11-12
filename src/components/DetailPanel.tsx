@@ -504,7 +504,7 @@ export function DetailPanel({ area: a }: { area: Area }) {
         Feedback <span>{a.comments.length}</span>
       </h3>
       {a.comments.length === 0 ? (
-        <div className="empty">No feedback yet. Be the first.</div>
+        <div className="empty empty-box">No feedback yet. Be the first.</div>
       ) : (
         <div className="cmts">
           {a.comments.map((c) => (
@@ -544,11 +544,6 @@ export function DetailPanel({ area: a }: { area: Area }) {
       </div>
 
       <div className={"panel-body" + (CONFIG.database ? "" : " short")}>
-        {statusNote(a) && (
-          <div className="status-note" style={{ background: reason.tint, color: reason.ink }}>
-            {statusNote(a)}
-          </div>
-        )}
         <div className="stats">
           <div className="stat">
             <div className="k">Area</div>
@@ -583,6 +578,19 @@ export function DetailPanel({ area: a }: { area: Area }) {
             </button>
           )}
         </div>
+
+        {/* Why it's unable, right above the buttons that answer it (Report issue, Request improvement) */}
+        {statusNote(a) && (
+          <div
+            className="status-note"
+            style={{
+              background: "noteTint" in reason ? reason.noteTint : reason.tint,
+              color: "noteInk" in reason ? reason.noteInk : reason.ink,
+            }}
+          >
+            {statusNote(a)}
+          </div>
+        )}
 
         <div className="actions">
           {CONFIG.database && (
