@@ -157,6 +157,7 @@ function formParams(a: Area) {
   const [lat, lon] = centerOf(a.shape);
   const notes = [`Category: ${CATS[a.cat].label}`];
   if (a.icao) notes.push(`Airport: ${a.icao}`);
+  if (a.requestNotes) notes.push(a.requestNotes);
   if (a.notes) notes.push(a.notes);
   if (a.shape.type === "polygon") notes.push(`Perimeter (lat,lon): ${JSON.stringify(a.shape.points)}`);
 
@@ -178,6 +179,7 @@ export function areaRow(a: Area): string {
   if (a.icao) notes.push(`Airport: ${a.icao}`);
   if (a.packageName) notes.push(`Package: ${a.packageName}${a.version ? ` (${a.version})` : ""}`);
   if (a.noPhotogrammetry) notes.push("No photogrammetry");
+  if (a.requestNotes) notes.push(`Request notes: ${a.requestNotes}`);
   if (a.notes) notes.push(`Notes: ${a.notes}`);
   for (const s of a.spots ?? []) notes.push(`Problem spot ${s.pin[0].toFixed(5)}, ${s.pin[1].toFixed(5)}: ${s.note}`);
   if (a.shape.type === "polygon") notes.push(`Perimeter (lat,lon): ${JSON.stringify(a.shape.points)}`);

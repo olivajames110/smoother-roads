@@ -353,6 +353,8 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .t-issue{background:#fdecec;color:#b42318}
 .t-question{background:var(--accent-soft);color:var(--accent-h)}
 .t-improve{background:#e7f6ec;color:#15803d}
+.t-request{background:#f3eefe;color:#6d28d9}
+.cmt-body p.pre{white-space:pre-wrap}
 .dev{font-size:10.5px;font-weight:700;background:var(--dark);color:#fff;padding:2px 6px;border-radius:5px;letter-spacing:.03em}
 .cmt-img{display:block;margin-top:8px;max-width:100%;max-height:180px;border-radius:10px;border:1px solid var(--line);cursor:zoom-in}
 .link{border:0;background:transparent;padding:0;margin-top:8px;color:var(--accent);font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:5px}

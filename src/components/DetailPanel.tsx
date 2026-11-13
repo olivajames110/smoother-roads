@@ -131,6 +131,26 @@ function NotesEditor({ area: a }: { area: Area }) {
   );
 }
 
+// What the requester wrote when sending the request, shown first in Feedback like a comment
+function RequestNote({ area: a }: { area: Area }) {
+  const author = a.by === "Community" ? "Requester" : a.by;
+  return (
+    <div className="cmt">
+      <div className="avatar" style={{ background: hue(author) }}>
+        {initials(author)}
+      </div>
+      <div className="cmt-body">
+        <div className="cmt-head">
+          <strong>{author}</strong>
+          <span className="tag t-request">Request</span>
+          <span className="time">{ago(a.date)}</span>
+        </div>
+        <p className="pre">{a.requestNotes}</p>
+      </div>
+    </div>
+  );
+}
+
 function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
   const flyToPoint = useStore((s) => s.flyToPoint);
@@ -503,12 +523,13 @@ export function DetailPanel({ area: a }: { area: Area }) {
   const feedback = (
     <>
       <h3 className="sec-t">
-        Feedback <span>{a.comments.length}</span>
+        Feedback <span>{a.comments.length + (a.requestNotes ? 1 : 0)}</span>
       </h3>
-      {a.comments.length === 0 ? (
+      {a.comments.length === 0 && !a.requestNotes ? (
         <div className="empty empty-box">No feedback yet. Be the first.</div>
       ) : (
         <div className="cmts">
+          {a.requestNotes && <RequestNote area={a} />}
           {a.comments.map((c) => (
             <Comment key={c.id} comment={c} parent={a.comments.find((p) => p.id === c.replyTo)} />
           ))}

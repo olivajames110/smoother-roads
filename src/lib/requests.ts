@@ -31,7 +31,9 @@ const toArea = (r: Row): Area => ({
   voted: false,
   by: "Community",
   date: Date.parse(r.created_at),
-  notes: r.notes,
+  // what the requester wrote shows as the first item in Feedback; Notes is the admin's
+  notes: "",
+  requestNotes: r.notes || undefined,
   shape: r.points ? { type: "polygon", points: r.points } : { type: "circle", center: [r.lat, r.lon], radius: r.radius_m ?? 0 },
   comments: [],
   request: true,

@@ -58,6 +58,7 @@ export interface Area {
   date: number;
   notes: string;
   notesAdmin?: boolean; // Notes written by the admin: shown with bold, underline and links
+  requestNotes?: string; // What the requester wrote when sending the request (shown in Feedback)
   shape: Shape;
   comments: AreaComment[];
   photos?: AreaPhoto[]; // In display order
