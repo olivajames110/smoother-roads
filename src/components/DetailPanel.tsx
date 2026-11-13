@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { setHidden, setNotes, setRegionHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
-import { areaRow } from "../lib/data";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageMi2, coverageShort } from "../lib/geo";
 import { CATS, REASONS, STATUS, statusNote } from "../lib/icons";
@@ -11,7 +10,7 @@ import { AdminMenu } from "./AdminMenu";
 import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
 import { formatNotes, withLinks } from "./LinkedText";
-import { Photos } from "./Photos";
+import { Media } from "./Media";
 
 const COMMENT_TYPES: Record<CommentType, string> = {
   feedback: "Feedback",
@@ -487,25 +486,9 @@ function Coords({ area: a }: { area: Area }) {
   );
 }
 
-function CopyRow({ area: a }: { area: Area }) {
-  const showToast = useStore((s) => s.showToast);
-  const copy = () =>
-    navigator.clipboard.writeText(areaRow(a)).then(
-      () => showToast("Area details copied"),
-      () => showToast("Couldn't copy the details", true),
-    );
-  return (
-    <button className="btn copy-row" title="Copy the place, coordinates, radius and notes as one spreadsheet row" onClick={copy}>
-      <Icon name="copy" size={15} />
-      Copy details
-    </button>
-  );
-}
-
 export function DetailPanel({ area: a }: { area: Area }) {
   const closePanel = useStore((s) => s.closePanel);
   const toggleVote = useStore((s) => s.toggleVote);
-  const zoomTo = useStore((s) => s.zoomTo);
   const admin = useStore((s) => s.admin);
   const status = STATUS[a.status];
   const reason = REASONS[a.reason ?? "tried"];
@@ -632,6 +615,7 @@ export function DetailPanel({ area: a }: { area: Area }) {
         )}
 
         <div className="actions">
+          {/* Released: download (every region is in the same flightsim.to download) */}
           {CONFIG.database && (
             <HoverTip
               className="act-tip"
@@ -668,49 +652,13 @@ export function DetailPanel({ area: a }: { area: Area }) {
               </button>
             </HoverTip>
           )}
-          <HoverTip
-            className="act-tip"
-            place="below-end"
-            tip={
-              <>
-                <span className="tip-t">Go to area</span>
-                <span className="tip-d">Moves the map to show this whole area.</span>
-              </>
-            }
-          >
-            <button className="btn" onClick={() => zoomTo(a)}>
-              <Icon name="target" size={15} />
-              <span className="bl">Go to area</span>
-            </button>
-          </HoverTip>
         </div>
-        {admin && (
-          <div className="actions admin-row">
-            <CopyRow area={a} />
-          </div>
-        )}
 
-        {CONFIG.database && CONFIG.photos && <Photos area={a} />}
-
-        {a.status === "released" && (
-          <>
-            <h3 className="sec-t">Get it</h3>
-            <div className="notes">
-              Download Smoother Roads and copy the{" "}
-              {a.packageName ? <strong>{a.packageName}</strong> : "region's"} folder into your Community folder.
-              {CONFIG.downloadUrl && (
-                <div>
-                  <a className="link" href={CONFIG.downloadUrl} target="_blank" rel="noopener">
-                    Get the mod
-                  </a>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+        {/* Photos / Places / Routes tabs */}
+        {CONFIG.database && <Media key={"media-" + a.id} area={a} />}
 
         {admin ? (
-          <NotesEditor key={a.id} area={a} />
+          <NotesEditor key={"notes-" + a.id} area={a} />
         ) : (
           a.notes && (
             <>

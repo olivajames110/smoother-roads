@@ -3,16 +3,27 @@ import "leaflet.markercluster";
 import { useEffect, useRef } from "react";
 import { CONFIG } from "../lib/config";
 import { esc, fmtN } from "../lib/format";
-import { centerOf, wrapLon } from "../lib/geo";
+import { centerOf, contains, wrapLon } from "../lib/geo";
 import { CATS, STATUS, sideColor, statusLabel } from "../lib/icons";
+import { pointLabel, routePoints } from "../lib/pois";
 import { useStore } from "../lib/store";
-import type { Area } from "../lib/types";
+import type { Area, LatLng } from "../lib/types";
 import { useVisible } from "../lib/useVisible";
 import { svgHtml } from "./Icon";
 
 const ACCENT = "#2563eb";
 const ISSUE = "#dc2626";
 const IMPROVE = "#16a34a";
+const POI = "#7c3aed";
+
+// A place (★) or a route's start / finish (A, B)
+const poiIcon = (label: string, on: boolean) =>
+  L.divIcon({
+    html: `<div class="poi-pin${on ? " on" : ""}">${label}</div>`,
+    className: "poi-pin-wrap",
+    iconSize: on ? [28, 28] : [22, 22],
+    iconAnchor: on ? [14, 14] : [11, 11],
+  });
 const SHAPES_MIN_ZOOM = 7;
 
 interface Layers {
@@ -73,7 +84,7 @@ function requestMenu(map: L.Map, e: L.LeafletMouseEvent) {
 // While drawing or placing a pin, clicks on existing areas count as map clicks
 function pick(a: Area, e: L.LeafletMouseEvent) {
   const s = useStore.getState();
-  if (s.pinMode || s.panel === "submit") s.onMapPoint([e.latlng.lat, wrapLon(e.latlng.lng)]);
+  if (s.pinMode || s.poiPick || s.panel === "submit") s.onMapPoint([e.latlng.lat, wrapLon(e.latlng.lng)]);
   else s.openDetail(a.id);
 }
 
@@ -89,6 +100,9 @@ export function MapView() {
   const pinMode = useStore((s) => s.pinMode);
   const commentPin = useStore((s) => s.comment.pin);
   const spot = useStore((s) => s.spot);
+  const poiFocus = useStore((s) => s.poiFocus);
+  const poiDraft = useStore((s) => s.poiDraft);
+  const poiPick = useStore((s) => s.poiPick);
   const selected = useStore((s) => s.areas.find((a) => a.id === s.selectedId));
   const fly = useStore((s) => s.fly);
 
@@ -248,7 +262,59 @@ export function MapView() {
         });
     }
     if (commentPin) dot(commentPin, ACCENT);
-  }, [selected, commentPin, spot]);
+    // the selected area's places (stars) and routes (A to B, dashed); the one picked is larger
+    for (const p of selected?.pois ?? []) {
+      if (p.id === poiDraft?.id) continue; // being edited: drawn below as the draft
+      const on = p.id === poiFocus;
+      const tip = { direction: "top" as const, offset: [0, -10] as L.PointTuple };
+      if (p.kind === "route" && p.end) {
+        const pts = routePoints(p);
+        L.polyline(pts, { color: POI, weight: on ? 4 : 2.5, dashArray: "6 7", opacity: on ? 1 : 0.7 }).addTo(l.pins);
+        // the stops between only on the route picked, so many routes don't crowd the map
+        pts.forEach((pt, i) => {
+          const label = pointLabel(i, pts.length);
+          if (!on && label !== "A" && label !== "B") return;
+          L.marker(pt, { icon: poiIcon(label, on), zIndexOffset: on ? 1000 : 0 })
+            .bindTooltip(esc(p.name), tip)
+            .on("click", () => useStore.getState().patch({ poiFocus: p.id }))
+            .addTo(l.pins);
+        });
+      } else {
+        L.marker(p.start, { icon: poiIcon("★", on), zIndexOffset: on ? 1000 : 0 })
+          .bindTooltip(esc(p.name), tip)
+          .on("click", () => useStore.getState().patch({ poiFocus: p.id }))
+          .addTo(l.pins);
+      }
+    }
+    // the suggestion being placed; its pins can be dragged to move them
+    if (poiDraft?.points.length) {
+      const pts = poiDraft.points;
+      const route = poiDraft.kind === "route";
+      if (route && pts.length > 1) L.polyline(pts, { color: POI, weight: 3, dashArray: "6 7" }).addTo(l.pins);
+      pts.forEach((pt, i) => {
+        L.marker(pt, {
+          icon: poiIcon(route ? pointLabel(i, pts.length) : "★", true),
+          zIndexOffset: 2000,
+          draggable: true,
+        })
+          .on("dragend", (e) => {
+            const { lat, lng } = (e.target as L.Marker).getLatLng();
+            const st = useStore.getState();
+            if (!st.poiDraft) return;
+            const to: LatLng = [lat, wrapLon(lng)];
+            if (selected && !contains(selected.shape, to)) {
+              // dropped outside the coverage: back to where it was
+              (e.target as L.Marker).setLatLng(pt);
+              st.showToast("That's outside this area's coverage. Pick a spot inside the outline.", true);
+              return;
+            }
+            const points = st.poiDraft.points.map((q, j): LatLng => (j === i ? to : q));
+            st.patch({ poiDraft: { ...st.poiDraft, points } });
+          })
+          .addTo(l.pins);
+      });
+    }
+  }, [selected, commentPin, spot, poiFocus, poiDraft]);
 
   useEffect(() => {
     const l = layers.current;
@@ -267,9 +333,9 @@ export function MapView() {
 
   // Toggled directly because a React className would wipe the classes Leaflet puts on this element
   useEffect(() => {
-    el.current!.classList.toggle("drawing", pinMode || panel === "submit");
+    el.current!.classList.toggle("drawing", pinMode || !!poiPick || panel === "submit");
     el.current!.classList.toggle("submitting", panel === "submit");
-  }, [pinMode, panel]);
+  }, [pinMode, poiPick, panel]);
 
   return <div id="map" ref={el} aria-label="Coverage map" />;
 }

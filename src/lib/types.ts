@@ -36,6 +36,23 @@ export interface AreaPhoto {
   date: number;
 }
 
+// A place to visit (one point) or a route (start and finish) in an area
+export type TimeOfDay = "sunrise" | "noon" | "golden" | "sunset" | "night";
+
+export interface AreaPoi {
+  id: string;
+  kind: "place" | "route";
+  name: string;
+  category: string; // "Viewpoint", "Landmark"…
+  note: string;
+  start: LatLng; // the place itself, or the route's start
+  end?: LatLng; // routes only: the finish
+  via: LatLng[]; // routes only: the stops between start and finish, in order
+  time: TimeOfDay | null; // routes only: the best time to drive it (Street GPS sets the clock on Start)
+  author: string;
+  approved: boolean; // waiting ones only reach the admin
+}
+
 export interface ProblemSpot {
   pin: LatLng;
   note: string;
@@ -62,6 +79,7 @@ export interface Area {
   shape: Shape;
   comments: AreaComment[];
   photos?: AreaPhoto[]; // In display order
+  pois?: AreaPoi[]; // Places and routes, in display order
   spots?: ProblemSpot[];
   packageName?: string;
   version?: string;

@@ -1,7 +1,8 @@
 import { CONFIG } from "./config";
 import { centerOf, enclosingRadiusKm } from "./geo";
 import { CATS } from "./icons";
-import type { Area, AreaComment, AreaPhoto, Cat, LatLng, Reason, Status } from "./types";
+import type { Area, AreaComment, AreaPhoto, AreaPoi, Cat, LatLng, Reason, Status } from "./types";
+import { fetchPois } from "./pois";
 import { fetchComments, fetchStatuses, type AreaOverride } from "./comments";
 import { fetchPhotos } from "./photos";
 import { fetchRequests } from "./requests";
@@ -119,10 +120,11 @@ export async function loadAreas(withHidden = false): Promise<Area[]> {
     published = published.map((a) => ({ ...a, votes: counts.get(a.id) ?? 0, voted: mine.has(a.id) }));
   }
   if (CONFIG.database) {
-    const [comments, statuses, photos] = await Promise.all([
+    const [comments, statuses, photos, pois] = await Promise.all([
       fetchComments().catch(() => new Map<string, AreaComment[]>()),
       fetchStatuses().catch(() => new Map<string, AreaOverride>()),
       CONFIG.photos ? fetchPhotos().catch(() => new Map<string, AreaPhoto[]>()) : new Map<string, AreaPhoto[]>(),
+      fetchPois().catch(() => new Map<string, AreaPoi[]>()),
     ]);
     published = published
       .map((a) => ({
@@ -136,6 +138,7 @@ export async function loadAreas(withHidden = false): Promise<Area[]> {
         notesAdmin: statuses.get(a.id)?.notes != null,
         comments: (comments.get(a.id) ?? []).filter((c) => withHidden || !c.hidden),
         photos: photos.get(a.id) ?? [],
+        pois: pois.get(a.id) ?? [],
       }))
       .filter((a) => withHidden || !a.hidden);
     saved.comments = {}; // Comments from before the database stayed in one browser

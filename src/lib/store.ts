@@ -9,6 +9,7 @@ import { countryOf, norm } from "./format";
 import { boundsOf, centerOf, contains, issueCount, shapeFromDraft } from "./geo";
 import { reversePlace, searchPlace } from "./geocode";
 import type { FilterKey } from "./icons";
+import { addPoi, MAX_POINTS, updatePoi, type PoiDraft } from "./pois";
 import type {
   Area,
   AreaComment,
@@ -115,6 +116,9 @@ interface Store {
   fly: FlyRequest | null;
   requestIntro: (() => void) | null; // The "before you request" note is open; runs this on Proceed
   composeNonce: number; // Bumped to open the comment box (Report an issue)
+  poiFocus: string | null; // The place or route picked in the panel (highlighted on the map)
+  poiDraft: PoiDraft | null; // A place or route being suggested
+  poiPick: boolean; // Map clicks add points to the suggestion (a place: its one point; a route: the next stop)
 
   init: (demo?: Area[]) => Promise<void>;
   adminAction: (job: () => Promise<unknown>, done: string) => Promise<void>;
@@ -131,11 +135,13 @@ interface Store {
   closePanel: () => void;
   zoomTo: (a: Area) => void;
   flyToPoint: (p: LatLng, zoom?: number) => void;
+  flyToBounds: (pts: LatLng[]) => void;
   toggleVote: (id: string) => void;
   postComment: () => Promise<void>;
   uploadPhotos: (files: File[]) => Promise<void>;
   movePhoto: (areaId: string, from: number, to: number) => Promise<void>;
   openSubmit: () => void;
+  submitPoi: () => Promise<void>;
   beginRequest: (go: () => void) => void;
   requestAt: (p: LatLng, zoom: number) => void;
   setDrawType: (t: Draft["type"]) => void;
@@ -180,6 +186,9 @@ export const useStore = create<Store>((set, get) => {
     hidden: readHidden(),
     requestIntro: null,
     composeNonce: 0,
+    poiFocus: null,
+    poiDraft: null,
+    poiPick: false,
     group: readJson<GroupBy>(GROUP_KEY, "country"),
     collapsed: (() => {
       try {
@@ -283,14 +292,24 @@ export const useStore = create<Store>((set, get) => {
         spot: null,
         spotNote: "",
         sidebarOpen: false,
+        poiFocus: null,
+        poiDraft: null,
+        poiPick: false,
       });
       get().zoomTo(area);
     },
 
-    closePanel: () => set({ panel: null, selectedId: null, pinMode: false, spot: null, spotNote: "" }),
+    closePanel: () =>
+      set({ panel: null, selectedId: null, pinMode: false, spot: null, spotNote: "", poiDraft: null, poiPick: false }),
 
     zoomTo: (a) => fly(boundsOf(a.shape), 13),
     flyToPoint: (p, zoom = 16) => fly([p, p], zoom),
+    flyToBounds: (pts) => {
+      if (!pts.length) return;
+      const la = pts.map((p) => p[0]);
+      const lo = pts.map((p) => p[1]);
+      fly([[Math.min(...la), Math.min(...lo)], [Math.max(...la), Math.max(...lo)]], 16);
+    },
 
     toggleVote(id) {
       const area = get().areas.find((a) => a.id === id);
@@ -451,11 +470,54 @@ export const useStore = create<Store>((set, get) => {
       });
     },
 
+    async submitPoi() {
+      const { poiDraft: d, selectedId, commenter, admin } = get();
+      if (!d || !selectedId || !d.name.trim() || d.points.length < (d.kind === "route" ? 2 : 1)) return;
+      set({ posting: true });
+      try {
+        if (d.id) await updatePoi(d);
+        else await addPoi(selectedId, d, admin ? commenter || "Smoother Roads" : commenter);
+        set({ poiDraft: null, poiPick: false, areas: await loadAreas(admin) });
+        get().showToast(d.id ? "Saved" : admin ? "Added" : "Thanks! It'll show once it's approved.");
+      } catch (e) {
+        const m = String((e as Error).message);
+        get().showToast(
+          m.includes("rate_limited")
+            ? "You've suggested a lot already. Please try again later."
+            : admin && m.includes("time_of_day")
+              ? "Run supabase/018_route_time.sql in Supabase first"
+              : admin && m.includes("via")
+              ? "Run supabase/017_route_stops.sql in Supabase first"
+              : admin && m.includes("area_pois")
+                ? "Run supabase/016_suggest_pois.sql in Supabase first"
+              : "Couldn't send it. Please try again.",
+          true,
+        );
+      } finally {
+        set({ posting: false });
+      }
+    },
+
     setDrawType: (type) => set({ draft: { ...get().draft, type } }),
     setRadius: (radius) => set({ draft: { ...get().draft, radius } }),
 
     onMapPoint(p) {
-      const { pinMode, panel, draft } = get();
+      const { pinMode, panel, draft, poiPick, poiDraft } = get();
+      if (poiPick && poiDraft) {
+        // every point inside the area's coverage: the GPS only sends people onto smoothed roads
+        const area = get().areas.find((a) => a.id === get().selectedId);
+        if (area && !contains(area.shape, p)) {
+          get().showToast("That's outside this area's coverage. Pick a spot inside the outline.", true);
+          return;
+        }
+        // a place has one point (picking ends); a route keeps adding stops until Done
+        if (poiDraft.kind === "place") set({ poiDraft: { ...poiDraft, points: [p] }, poiPick: false });
+        else {
+          const points = [...poiDraft.points, p].slice(0, MAX_POINTS);
+          set({ poiDraft: { ...poiDraft, points }, poiPick: points.length < MAX_POINTS });
+        }
+        return;
+      }
       if (pinMode) {
         set(CONFIG.database ? { pinMode: false, comment: { ...get().comment, pin: p } } : { pinMode: false, spot: p });
         return;

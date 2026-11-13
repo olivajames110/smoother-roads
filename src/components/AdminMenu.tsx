@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { areaRow } from "../lib/data";
 import { setNoPhotogrammetry, setRegionHidden, setStatus, signOut } from "../lib/comments";
 import { REASONS, STATUS } from "../lib/icons";
 import { deleteRequestFully } from "../lib/requests";
@@ -10,6 +11,7 @@ import { Icon } from "./Icon";
 export function AdminMenu({ area: a }: { area: Area }) {
   const adminAction = useStore((s) => s.adminAction);
   const closePanel = useStore((s) => s.closePanel);
+  const showToast = useStore((s) => s.showToast);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
 
@@ -106,6 +108,21 @@ export function AdminMenu({ area: a }: { area: Area }) {
           >
             <Icon name={a.hidden ? "eye" : "eyeOff"} size={15} />
             {a.hidden ? "Show on site" : "Hide from site"}
+          </button>
+          <button
+            role="menuitem"
+            className="pop-item"
+            title="The place, coordinates, radius and notes as one spreadsheet row"
+            onClick={() => {
+              setOpen(false);
+              navigator.clipboard.writeText(areaRow(a)).then(
+                () => showToast("Area details copied"),
+                () => showToast("Couldn't copy the details", true),
+              );
+            }}
+          >
+            <Icon name="copy" size={15} />
+            Copy details
           </button>
           {a.request && (
             <button

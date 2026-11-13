@@ -95,7 +95,8 @@ function Tile({
   );
 }
 
-export function Photos({ area: a }: { area: Area }) {
+// bare: inside the Photos / Places / Routes tabs (no heading of its own)
+export function Photos({ area: a, bare }: { area: Area; bare?: boolean }) {
   const admin = useStore((s) => s.admin);
   const uploading = useStore((s) => s.uploading);
   const uploadPhotos = useStore((s) => s.uploadPhotos);
@@ -130,13 +131,15 @@ export function Photos({ area: a }: { area: Area }) {
     : undefined;
 
   // Only the admin adds photos; visitors see the section once there's something in it
-  if (!admin && shown.length === 0) return null;
+  if (!admin && shown.length === 0) return bare ? <div className="empty empty-box">No photos yet.</div> : null;
 
   return (
     <div className="photos-sec">
-      <h3 className="sec-t">
-        Photos {shown.length > 0 && <span>{shown.length}</span>}
-      </h3>
+      {!bare && (
+        <h3 className="sec-t">
+          Photos {shown.length > 0 && <span>{shown.length}</span>}
+        </h3>
+      )}
 
       {shown.length > 0 ? (
         <div className="photos">
