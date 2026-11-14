@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { CONFIG } from "./config";
-import { addComment, amAdmin } from "./comments";
+import { addComment, amAdmin, editReview, fetchMyReviews } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
+import { fetchLineIndex, fetchLines } from "./lines";
 import { reorderPhotos, uploadPhoto } from "./photos";
 import { addRequest } from "./requests";
 import { setVote } from "./votes";
@@ -26,6 +27,17 @@ export type View = "map" | "list";
 export type PanelMode = "detail" | "submit" | null;
 
 export const INTRO_KEY = "sr-request-intro-off";
+// Tips a visitor can dismiss ("x" or "Don't show again"); Help > Show hidden tips brings them back
+export const POI_TIP_KEY = "sr-poi-tip-off";
+const LINES_KEY = "sr-show-lines";
+const TIP_KEYS = [POI_TIP_KEY, INTRO_KEY];
+const isOff = (key: string) => {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+};
 // The list's filters and view, remembered in this browser
 const HIDDEN_KEY = "sr-hidden-statuses";
 const GROUP_KEY = "sr-group";
@@ -63,12 +75,13 @@ function saveCollapsed(c: Set<string>) {
 }
 const newDraft = (): Draft => ({ type: "radius", center: null, radius: 3000, points: [], closed: false });
 const newForm = (): SubmitForm => ({ name: "", region: "", icao: "", notes: "", cat: "city" });
-const newComment = (): CommentDraft => ({ type: "feedback", text: "", image: null, pin: null, replyTo: null });
+const newComment = (): CommentDraft => ({ type: "feedback", text: "", image: null, pin: null, replyTo: null, rating: 0 });
 
 let demoMode = false;
 let flyNonce = 0;
 let toastTimer: ReturnType<typeof setTimeout> | undefined;
 const voting = new Set<string>();
+const linesInFlight = new Set<string>(); // smoothed-roads files being fetched
 
 const NAME_KEY = "smoother-roads:name";
 function savedName() {
@@ -102,6 +115,7 @@ interface Store {
   placeNote: string;
   pinMode: boolean;
   comment: CommentDraft;
+  myReviews: Set<string>; // ids of this browser's own reviews (it can change them)
   commenter: string;
   posting: boolean;
   spot: LatLng | null;
@@ -115,6 +129,12 @@ interface Store {
   toastFailed: boolean;
   fly: FlyRequest | null;
   requestIntro: (() => void) | null; // The "before you request" note is open; runs this on Proceed
+  newsOpen: boolean; // The "what's new" note is open
+  poiTipOff: boolean; // The Street GPS tip above places and routes was dismissed
+  lineIndex: Record<string, number>; // Released areas with a smoothed-roads file: id -> road km
+  showLines: boolean; // Draw smoothed roads: every released area in view, and the open one (remembered in this browser)
+  roadLines: Record<string, LatLng[][]>; // Loaded smoothed roads, by area
+  linesLoading: string | null; // The area whose roads are loading
   composeNonce: number; // Bumped to open the comment box (Report an issue)
   poiFocus: string | null; // The place or route picked in the panel (highlighted on the map)
   poiDraft: PoiDraft | null; // A place or route being suggested
@@ -126,6 +146,11 @@ interface Store {
   setForm: (patch: Partial<SubmitForm>) => void;
   setComment: (patch: Partial<CommentDraft>) => void;
   showToast: (message: string, failed?: boolean) => void;
+  hideTip: (key: string) => void;
+  setShowLines: (on: boolean) => void;
+  loadLines: (id: string) => Promise<void>;
+  tipsHidden: () => boolean;
+  showTips: () => void;
   toggleStatus: (k: FilterKey) => void;
   setGroup: (g: GroupBy) => void;
   toggleGroup: (key: string) => void;
@@ -186,6 +211,12 @@ export const useStore = create<Store>((set, get) => {
     hidden: readHidden(),
     requestIntro: null,
     composeNonce: 0,
+    newsOpen: false,
+    poiTipOff: isOff(POI_TIP_KEY),
+    lineIndex: {},
+    showLines: readJson<boolean>(LINES_KEY, false),
+    roadLines: {},
+    linesLoading: null,
     poiFocus: null,
     poiDraft: null,
     poiPick: false,
@@ -208,6 +239,7 @@ export const useStore = create<Store>((set, get) => {
     placeNote: "",
     pinMode: false,
     comment: newComment(),
+    myReviews: new Set(),
     commenter: savedName(),
     posting: false,
     spot: null,
@@ -226,6 +258,12 @@ export const useStore = create<Store>((set, get) => {
       // Signed in on ?admin: admin options show in the panel, and hidden items stay listed
       const admin = !demo && CONFIG.database && (await amAdmin().catch(() => false));
       set({ admin, areas: demo ?? (await loadAreas(admin)), loaded: true });
+      if (!demo && CONFIG.database) fetchMyReviews().then((myReviews) => set({ myReviews }), () => {});
+      fetchLineIndex().then((lineIndex) => {
+        set({ lineIndex });
+        const id = get().selectedId;
+        if (get().showLines && id) get().loadLines(id);
+      });
     },
 
     async adminAction(job, done) {
@@ -242,6 +280,52 @@ export const useStore = create<Store>((set, get) => {
     patch: (patch) => set(patch),
     setForm: (patch) => set({ form: { ...get().form, ...patch } }),
     setComment: (patch) => set({ comment: { ...get().comment, ...patch } }),
+
+    setShowLines(on) {
+      writeJson(LINES_KEY, on);
+      set({ showLines: on });
+      const id = get().selectedId;
+      if (on && id) get().loadLines(id);
+    },
+
+    async loadLines(id) {
+      const { roadLines, lineIndex } = get();
+      if (roadLines[id] || !(id in lineIndex) || linesInFlight.has(id)) return;
+      linesInFlight.add(id);
+      set({ linesLoading: id });
+      try {
+        const lines = await fetchLines(id);
+        set({ roadLines: { ...get().roadLines, [id]: lines } });
+      } catch {
+        get().showToast("Couldn't load the smoothed roads", true);
+      } finally {
+        linesInFlight.delete(id);
+        if (get().linesLoading === id) set({ linesLoading: null });
+      }
+    },
+
+    hideTip(key) {
+      try {
+        localStorage.setItem(key, "1");
+      } catch {
+        /* private window: hidden for now */
+      }
+      if (key === POI_TIP_KEY) set({ poiTipOff: true });
+    },
+
+    tipsHidden: () => get().poiTipOff || TIP_KEYS.some(isOff),
+
+    showTips() {
+      for (const k of TIP_KEYS) {
+        try {
+          localStorage.removeItem(k);
+        } catch {
+          /* private window */
+        }
+      }
+      set({ poiTipOff: false });
+      get().showToast("Hidden tips are back on");
+    },
 
     showToast(message, failed = false) {
       clearTimeout(toastTimer);
@@ -297,6 +381,7 @@ export const useStore = create<Store>((set, get) => {
         poiPick: false,
       });
       get().zoomTo(area);
+      if (get().showLines) get().loadLines(id);
     },
 
     closePanel: () =>
@@ -335,30 +420,63 @@ export const useStore = create<Store>((set, get) => {
     async postComment() {
       const { comment, selectedId, areas, commenter, posting } = get();
       const text = comment.text.trim();
-      if (!text || !selectedId || posting) return;
+      const review = comment.type === "review";
+      if ((review ? !comment.rating : !text) || !selectedId || posting) return;
       if (CONFIG.database && !demoMode) {
         const author = commenter.trim().slice(0, 40) || (get().admin ? "Jim" : "Anonymous");
+        // A visitor has one review per area: posting again changes it
+        const mine = review
+          ? areas.find((a) => a.id === selectedId)?.comments.find((c) => c.type === "review" && get().myReviews.has(c.id))
+          : undefined;
         set({ posting: true });
         try {
-          const saved = await addComment(selectedId, author, comment.type, text, comment.pin, comment.replyTo ?? undefined);
-          set({
-            areas: get().areas.map((a) => (a.id === selectedId ? { ...a, comments: [...a.comments, saved] } : a)),
-            comment: newComment(),
-            pinMode: false,
-          });
+          if (mine) {
+            await editReview(mine.id, comment.rating, text, author);
+            const changed = { ...mine, rating: comment.rating, text, author, date: Date.now() };
+            set({
+              areas: get().areas.map((a) =>
+                a.id === selectedId ? { ...a, comments: a.comments.map((c) => (c.id === mine.id ? changed : c)) } : a,
+              ),
+              comment: newComment(),
+              pinMode: false,
+            });
+          } else {
+            const saved = await addComment(
+              selectedId,
+              author,
+              comment.type,
+              text,
+              comment.pin,
+              comment.replyTo ?? undefined,
+              review ? comment.rating : undefined,
+            );
+            set({
+              areas: get().areas.map((a) => (a.id === selectedId ? { ...a, comments: [...a.comments, saved] } : a)),
+              comment: newComment(),
+              pinMode: false,
+              myReviews: review ? new Set([...get().myReviews, saved.id]) : get().myReviews,
+            });
+          }
           try {
             localStorage.setItem(NAME_KEY, commenter.trim());
           } catch {
             // Only means the name isn't remembered
           }
-          get().showToast("Comment posted");
+          get().showToast(mine ? "Review updated" : review ? "Thanks for your review" : "Comment posted");
         } catch (e) {
+          const m = String((e as Error).message);
           get().showToast(
-            String((e as Error).message).includes("rate_limited")
+            m.includes("rate_limited")
               ? "You're posting quite fast. Please try again later."
-              : get().admin && String((e as Error).message).includes("type_check")
-                ? "Run supabase/013_improve_comments.sql in Supabase first"
-                : "Couldn't post your comment. Please try again.",
+              : m.includes("one_review") || m.includes("duplicate")
+                ? "You've already reviewed this area."
+                : m.includes("not_released")
+                  ? "Only released areas can be reviewed."
+                  : get().admin && review && (m.includes("type_check") || m.includes("rating"))
+                    ? "Run supabase/021_area_reviews.sql in Supabase first"
+                    : get().admin && m.includes("type_check")
+                      ? "Run supabase/013_improve_comments.sql in Supabase first"
+                      : "Couldn't post your comment. Please try again.",
             true,
           );
         } finally {
@@ -371,6 +489,7 @@ export const useStore = create<Store>((set, get) => {
         author: "You",
         type: comment.type,
         text,
+        rating: review ? comment.rating : undefined,
         image: comment.image ?? undefined,
         pin: comment.pin ?? undefined,
         date: Date.now(),

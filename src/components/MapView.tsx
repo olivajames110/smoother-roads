@@ -3,7 +3,7 @@ import "leaflet.markercluster";
 import { useEffect, useRef } from "react";
 import { CONFIG } from "../lib/config";
 import { esc, fmtN } from "../lib/format";
-import { centerOf, contains, wrapLon } from "../lib/geo";
+import { boundsOf, centerOf, contains, wrapLon } from "../lib/geo";
 import { CATS, STATUS, sideColor, statusLabel } from "../lib/icons";
 import { pointLabel, routePoints } from "../lib/pois";
 import { useStore } from "../lib/store";
@@ -25,6 +25,7 @@ const poiIcon = (label: string, on: boolean) =>
     iconAnchor: on ? [14, 14] : [11, 11],
   });
 const SHAPES_MIN_ZOOM = 7;
+const LINES_MIN_ZOOM = 9; // smoothed roads show for every area in view from here in
 
 interface Layers {
   map: L.Map;
@@ -105,6 +106,61 @@ export function MapView() {
   const poiPick = useStore((s) => s.poiPick);
   const selected = useStore((s) => s.areas.find((a) => a.id === s.selectedId));
   const fly = useStore((s) => s.fly);
+  const showLines = useStore((s) => s.showLines);
+  const roadLines = useStore((s) => s.roadLines);
+  const lineIndex = useStore((s) => s.lineIndex);
+  const roadsLayers = useRef(new Map<string, L.Polyline>());
+  const roadsRenderer = useRef<L.Canvas | null>(null);
+
+  // Smoothed roads (the map's "Smoothed roads" switch): green lines for every released area in
+  // view once zoomed in to LINES_MIN_ZOOM, and always for the open area. Each area's file loads
+  // the first time it's needed; areas out of view are taken off the map (kept in memory).
+  useEffect(() => {
+    const map = layers.current?.map;
+    if (!map) return;
+    const drawn = roadsLayers.current;
+    const sync = () => {
+      const want = new Set<string>();
+      if (showLines && roadLines) {
+        const st = useStore.getState();
+        const view = map.getBounds().pad(0.2);
+        const near = map.getZoom() >= LINES_MIN_ZOOM;
+        for (const a of st.areas) {
+          if (!(a.id in (lineIndex ?? {}))) continue;
+          const open = a.id === st.selectedId;
+          if (!open && !(near && view.intersects(L.latLngBounds(boundsOf(a.shape))))) continue;
+          want.add(a.id);
+          if (!roadLines[a.id]) st.loadLines(a.id);
+        }
+      }
+      for (const [id, layer] of drawn) {
+        if (!want.has(id)) {
+          layer.remove();
+          drawn.delete(id);
+        }
+      }
+      for (const id of want) {
+        const lines = roadLines?.[id];
+        if (!lines?.length || drawn.has(id)) continue;
+        roadsRenderer.current ??= L.canvas({ padding: 0.3 });
+        drawn.set(
+          id,
+          L.polyline(lines, {
+            renderer: roadsRenderer.current,
+            color: "#188038",
+            weight: 2.5,
+            opacity: 0.9,
+            interactive: false,
+          }).addTo(map),
+        );
+      }
+    };
+    sync();
+    map.on("moveend", sync);
+    return () => {
+      map.off("moveend", sync);
+    };
+  }, [showLines, roadLines, lineIndex, selectedId]);
 
   useEffect(() => {
     const map = L.map(el.current!, {

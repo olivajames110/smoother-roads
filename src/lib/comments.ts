@@ -1,7 +1,8 @@
 import { captchaToken, ensureVisitor, sb } from "./supabase";
 import type { AreaComment, CommentType, LatLng, Reason, Status } from "./types";
 
-const COLUMNS = "id, area_id, author, dev, type, body, pin_lat, pin_lon, hidden, created_at, reply_to";
+const BASE = "id, area_id, author, dev, type, body, pin_lat, pin_lon, hidden, created_at, reply_to";
+const COLUMNS = BASE + ", rating"; // rating: 021_area_reviews.sql
 
 interface Row {
   id: string;
@@ -15,6 +16,7 @@ interface Row {
   hidden: boolean;
   created_at: string;
   reply_to: string | null;
+  rating?: number | null;
 }
 
 const toComment = (r: Row): AreaComment => ({
@@ -27,13 +29,17 @@ const toComment = (r: Row): AreaComment => ({
   date: Date.parse(r.created_at),
   hidden: r.hidden,
   replyTo: r.reply_to ?? undefined,
+  rating: r.rating ?? undefined,
 });
 
 export async function fetchComments() {
-  const { data, error } = await sb.from("area_comments").select(COLUMNS).order("created_at").limit(5000);
+  const get = (cols: string) => sb.from("area_comments").select(cols).order("created_at").limit(5000);
+  let { data, error } = await get(COLUMNS);
+  // before 021_area_reviews.sql has run there's no rating column
+  if (error) ({ data, error } = await get(BASE));
   if (error) throw error;
   const byArea = new Map<string, AreaComment[]>();
-  for (const row of (data ?? []) as Row[]) {
+  for (const row of (data ?? []) as unknown as Row[]) {
     byArea.set(row.area_id, [...(byArea.get(row.area_id) ?? []), toComment(row)]);
   }
   return byArea;
@@ -90,23 +96,45 @@ export async function addComment(
   text: string,
   pin: LatLng | null,
   replyTo?: string,
+  rating?: number,
 ) {
   await ensureVisitor();
+  const row: Record<string, unknown> = {
+    area_id: areaId,
+    author,
+    type,
+    body: text,
+    pin_lat: pin?.[0] ?? null,
+    pin_lon: pin?.[1] ?? null,
+    reply_to: replyTo ?? null,
+  };
+  if (type === "review") row.rating = rating;
   const { data, error } = await sb
     .from("area_comments")
-    .insert({
-      area_id: areaId,
-      author,
-      type,
-      body: text,
-      pin_lat: pin?.[0] ?? null,
-      pin_lon: pin?.[1] ?? null,
-      reply_to: replyTo ?? null,
-    })
-    .select(COLUMNS)
+    .insert(row)
+    .select(type === "review" ? COLUMNS : BASE)
     .single();
   if (error) throw error;
-  return toComment(data as Row);
+  return toComment(data as unknown as Row);
+}
+
+// The ids of this browser's own reviews (none before it has signed in, or before 021 has run)
+export async function fetchMyReviews() {
+  const { data: session } = await sb.auth.getSession();
+  if (!session.session) return new Set<string>();
+  const { data } = await sb.rpc("my_reviews");
+  return new Set(((data ?? []) as { id: string }[]).map((r) => r.id));
+}
+
+export async function editReview(id: string, rating: number, text: string, author: string) {
+  const { error } = await sb.rpc("edit_review", { review_id: id, stars: rating, review: text, name: author });
+  if (error) throw error;
+}
+
+// Average stars and how many reviews (visible ones only)
+export function ratingOf(comments: AreaComment[]) {
+  const r = comments.filter((c) => c.type === "review" && c.rating && !c.hidden);
+  return { avg: r.length ? r.reduce((n, c) => n + c.rating!, 0) / r.length : 0, count: r.length };
 }
 
 export async function setHidden(id: string, hidden: boolean) {

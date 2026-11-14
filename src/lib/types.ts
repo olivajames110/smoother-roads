@@ -2,7 +2,7 @@ export type LatLng = [number, number];
 export type Cat = "city" | "town" | "airport" | "mountain" | "coastal" | "race" | "island";
 export type Status = "requested" | "progress" | "released" | "unable";
 export type Reason = "alternative" | "no-photogrammetry" | "tried"; // Why an area is "unable"
-export type CommentType = "feedback" | "issue" | "improve" | "question";
+export type CommentType = "feedback" | "issue" | "improve" | "question" | "review";
 export type GroupBy = "country" | "az" | "votes" | "new" | "old" | "status";
 export type SortBy = "votes" | "new" | "old" | "issues";
 
@@ -22,6 +22,7 @@ export interface AreaComment {
   local?: boolean; // Only stored in this browser until the database exists
   hidden?: boolean; // Hidden from visitors; only an admin receives these
   replyTo?: string; // The comment this one answers
+  rating?: number; // A review: 1 to 5 stars
 }
 
 export interface AreaPhoto {
@@ -111,6 +112,7 @@ export interface CommentDraft {
   image: string | null;
   pin: LatLng | null;
   replyTo: string | null; // Admin replies: the comment being answered
+  rating: number; // A review's stars (0 = not picked yet)
 }
 
 export interface FlyRequest {

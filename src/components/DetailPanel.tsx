@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { setHidden, setNotes, setRegionHidden } from "../lib/comments";
+import { ratingOf, setHidden, setNotes, setRegionHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageMi2, coverageShort } from "../lib/geo";
@@ -13,6 +13,7 @@ import { formatNotes, withLinks } from "./LinkedText";
 import { Media } from "./Media";
 
 const COMMENT_TYPES: Record<CommentType, string> = {
+  review: "Review",
   feedback: "Feedback",
   issue: "Issue",
   improve: "Improve",
@@ -20,11 +21,50 @@ const COMMENT_TYPES: Record<CommentType, string> = {
 };
 // What the text box asks for, per type
 const PROMPTS: Record<CommentType, { label: string; hint: string }> = {
+  review: { label: "Review (optional)", hint: "How do the roads drive here?" },
   feedback: { label: "Comment", hint: "Share your thoughts…" },
   issue: { label: "Issue", hint: "What's wrong, and where?" },
   improve: { label: "Improvement", hint: "Which roads or spot should be smoother?" },
   question: { label: "Question", hint: "Share your thoughts…" },
 };
+
+const STAR = '<path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/>';
+
+// A row of 5 stars: shows a rating (halves included), or picks one when onPick is given
+export function Stars({ value, size = 14, onPick }: { value: number; size?: number; onPick?: (n: number) => void }) {
+  const [hover, setHover] = useState(0);
+  const shown = hover || value;
+  return (
+    <span className={"stars" + (onPick ? " pick" : "")} onMouseLeave={() => setHover(0)} aria-label={`${value} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((n) => {
+        const fill = Math.max(0, Math.min(1, shown - n + 1));
+        const star = (
+          <span className="star" style={{ width: size, height: size }}>
+            <Icon d={STAR} size={size} weight={1.6} />
+            <span className="star-on" style={{ width: `${fill * 100}%` }}>
+              <Icon d={STAR} size={size} weight={1.6} />
+            </span>
+          </span>
+        );
+        return onPick ? (
+          <button
+            key={n}
+            type="button"
+            title={`${n} star${n === 1 ? "" : "s"}`}
+            onMouseEnter={() => setHover(n)}
+            onClick={() => onPick(n)}
+          >
+            {star}
+          </button>
+        ) : (
+          <span key={n}>{star}</span>
+        );
+      })}
+    </span>
+  );
+}
+
+const RATING_WORDS = ["", "Poor", "Fair", "Good", "Great", "Excellent"];
 
 // Admin: the area's notes, editable in place (saved to the database, shown to everyone)
 function NotesEditor({ area: a }: { area: Area }) {
@@ -164,8 +204,15 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
       <div className="cmt-body">
         <div className="cmt-head">
           <strong>{c.author}</strong>
-          {c.dev && <span className="dev">DEV</span>}
-          <span className={"tag t-" + c.type}>{COMMENT_TYPES[c.type]}</span>
+          {c.type === "review" && c.rating ? <Stars value={c.rating} size={13} /> : null}
+          {c.dev ? (
+            <span className="tag t-author">
+              <Icon d='<path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/>' size={11} weight={2.4} />
+              Author
+            </span>
+          ) : (
+            <span className={"tag t-" + c.type}>{COMMENT_TYPES[c.type]}</span>
+          )}
           <span className="time">{ago(c.date)}</span>
           {c.hidden && <span className="tag t-hidden">Hidden</span>}
         </div>
@@ -174,7 +221,7 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
             Replying to <strong>{parent.author}</strong>: {parent.text}
           </div>
         )}
-        <p>{c.dev ? withLinks(c.text) : c.text}</p>
+        {c.text && <p>{c.dev ? withLinks(c.text) : c.text}</p>}
         {c.image && <img className="cmt-img" src={c.image} alt="Attached screenshot" onClick={() => patch({ lightbox: c.image })} />}
         {c.pin && (
           <button className="link" onClick={() => flyToPoint(c.pin!)}>
@@ -209,7 +256,14 @@ function Compose() {
   const commenter = useStore((s) => s.commenter);
   const admin = useStore((s) => s.admin);
   const posting = useStore((s) => s.posting);
-  const replyingTo = useStore((s) => s.areas.find((a) => a.id === s.selectedId)?.comments.find((c) => c.id === s.comment.replyTo));
+  const area = useStore((s) => s.areas.find((a) => a.id === s.selectedId));
+  const myReviews = useStore((s) => s.myReviews);
+  const replyingTo = area?.comments.find((c) => c.id === comment.replyTo);
+  const released = area?.status === "released";
+  const mine = area?.comments.find((c) => c.type === "review" && myReviews.has(c.id));
+  const review = comment.type === "review";
+  // Reviews are for released areas only, and never a reply
+  const types = (Object.keys(COMMENT_TYPES) as CommentType[]).filter((t) => t !== "review" || (released && !comment.replyTo));
   const file = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
   const [open, setOpen] = useState(false);
@@ -239,8 +293,24 @@ function Compose() {
 
   // Closes again once a comment is posted
   useEffect(() => {
-    if (!posting && !comment.text) setOpen(false);
+    if (!posting && !comment.text && !comment.rating) setOpen(false);
   }, [posting]);
+
+  // Not a released area (or replying): a review isn't offered, so fall back to feedback
+  useEffect(() => {
+    if (review && !types.includes("review")) setComment({ type: "feedback" });
+  }, [review, released, comment.replyTo]);
+
+  // The author posts without a type (saved as feedback, shown as "Author")
+  useEffect(() => {
+    if (admin && comment.type !== "feedback") setComment({ type: "feedback" });
+  }, [admin, comment.type]);
+
+  // Picking Review with a review already written: start from it, to change it
+  const pickType = (t: CommentType) => {
+    if (t === "review" && mine && !comment.rating) setComment({ type: t, rating: mine.rating ?? 0, text: mine.text });
+    else setComment({ type: t });
+  };
 
   // An admin's Reply opens the box with the cursor in it
   useEffect(() => {
@@ -259,18 +329,26 @@ function Compose() {
   }, [composeNonce]);
 
   // The type chips show folded too; picking one opens the box with that type
-  const chips = (
+  const chips = admin ? (
     <div className="chips">
-      {(Object.keys(COMMENT_TYPES) as CommentType[]).map((t) => (
+      <span className="chip on author">
+        <Icon d='<path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/>' size={12} weight={2.4} />
+        Author
+      </span>
+    </div>
+  ) : (
+    <div className="chips">
+      {types.map((t) => (
         <button
           key={t}
-          className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" || t === "improve" ? " " + t : "")}
+          className={"chip" + (comment.type === t ? " on" : "") + (t === "issue" || t === "improve" || t === "review" ? " " + t : "")}
           onClick={() => {
-            setComment({ type: t });
+            pickType(t);
             if (!open) expand();
           }}
         >
-          {COMMENT_TYPES[t]}
+          {t === "review" && <Icon d={STAR} size={12} weight={2.2} />}
+          {t === "review" && mine ? "Your review" : COMMENT_TYPES[t]}
         </button>
       ))}
     </div>
@@ -281,7 +359,7 @@ function Compose() {
       <div className="compose collapsed">
         <div className="compose-top">{chips}</div>
         <button className={"compose-open" + (comment.text ? " draft" : "")} onClick={expand}>
-          {comment.text || PROMPTS[comment.type].hint}
+          {comment.text || (review ? "Rate this area and leave a review" : PROMPTS[comment.type].hint)}
         </button>
       </div>
     );
@@ -308,13 +386,23 @@ function Compose() {
           onChange={(e) => patch({ commenter: e.target.value })}
         />
         {admin && (
-          <span className="dev" title="You're posting as the dev">
-            DEV
+          <span className="tag t-author name-author" title="You're posting as the author">
+            Author
           </span>
         )}
       </div>
+      {review && (
+        <>
+          <label className="lbl cmt-lbl">Rating</label>
+          <div className="rate-pick">
+            <Stars value={comment.rating} size={20} onPick={(n) => setComment({ rating: n })} />
+            <span className="rate-word">{comment.rating ? RATING_WORDS[comment.rating] : "Tap a star"}</span>
+          </div>
+          {mine && <div className="rate-note">You've reviewed this area. Posting again changes your review.</div>}
+        </>
+      )}
       <label className="lbl cmt-lbl" htmlFor="cmt-text">
-        {PROMPTS[comment.type].label}
+        {admin ? "Comment" : PROMPTS[comment.type].label}
       </label>
       <textarea
         id="cmt-text"
@@ -377,8 +465,12 @@ function Compose() {
             <Icon name="img" size={18} />
           </button>
         )}
-        <button className="btn cyan sm" disabled={!comment.text.trim() || posting} onClick={postComment}>
-          {posting ? "Posting…" : "Post " + COMMENT_TYPES[comment.type]}
+        <button
+          className="btn cyan sm"
+          disabled={(review ? !comment.rating : !comment.text.trim()) || posting}
+          onClick={postComment}
+        >
+          {posting ? "Posting…" : review && mine ? "Update review" : "Post " + COMMENT_TYPES[comment.type]}
         </button>
       </div>
       <p className="compose-note">
@@ -486,6 +578,29 @@ function Coords({ area: a }: { area: Area }) {
   );
 }
 
+// Released areas: show every street the download smooths, as green lines on the map
+function LinesToggle({ area: a }: { area: Area }) {
+  const km = useStore((s) => s.lineIndex?.[a.id]);
+  const on = useStore((s) => s.showLines);
+  const loading = useStore((s) => s.linesLoading === a.id);
+  const setShowLines = useStore((s) => s.setShowLines);
+  if (km === undefined) return null;
+  return (
+    <button className={"lines-toggle" + (on ? " on" : "")} role="switch" aria-checked={on} onClick={() => setShowLines(!on)}>
+      <span className="lt-ico">
+        <Icon d='<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>' size={16} weight={2.2} />
+      </span>
+      <span className="lt-text">
+        <b>Road coverage detail</b>
+        <span>{loading ? "Loading…" : "See exactly which streets are included"}</span>
+      </span>
+      <span className="lt-switch" aria-hidden="true">
+        <i />
+      </span>
+    </button>
+  );
+}
+
 export function DetailPanel({ area: a }: { area: Area }) {
   const closePanel = useStore((s) => s.closePanel);
   const toggleVote = useStore((s) => s.toggleVote);
@@ -499,9 +614,19 @@ export function DetailPanel({ area: a }: { area: Area }) {
   // Opens the comment box set to a type ("Issue", "Improve"), ready to describe it and mark the
   // spot on the map
   const openAs = (type: CommentType) => {
-    setComment({ type });
+    const { myReviews, comment } = useStore.getState();
+    const mine = a.comments.find((c) => c.type === "review" && myReviews.has(c.id));
+    // A review already written: open it, to change it
+    if (type === "review" && mine && comment.type !== "review") setComment({ type, rating: mine.rating ?? 0, text: mine.text, replyTo: null });
+    else setComment(type === "review" ? { type, replyTo: null } : { type });
     patch({ composeNonce: useStore.getState().composeNonce + 1 });
   };
+
+  const rating = ratingOf(a.comments);
+  // road km: the area's own figure, else the released pack's (so every released area shows Roads)
+  const packKm = useStore((s) => s.lineIndex?.[a.id]);
+  const roadKm = a.roadKm ?? packKm ?? null;
+  const released = a.status === "released" && CONFIG.database;
 
   const feedback = (
     <>
@@ -574,16 +699,35 @@ export function DetailPanel({ area: a }: { area: Area }) {
               <span className="v2">{coverageShort(a.shape)}</span>
             </div>
           </div>
-          {a.roadKm != null && (
+          {roadKm != null && (
             <div className="stat">
               <div className="k">Roads</div>
               <div className="v">
-                <span style={{ whiteSpace: "nowrap" }}>{Math.round(a.roadKm * 0.621371).toLocaleString()} mi</span>
-                <span className="v2">{Math.round(a.roadKm).toLocaleString()} km</span>
+                <span style={{ whiteSpace: "nowrap" }}>{Math.round(roadKm * 0.621371).toLocaleString()} mi</span>
+                <span className="v2">{Math.round(roadKm).toLocaleString()} km</span>
               </div>
             </div>
           )}
-          {CONFIG.votes && (
+          {released && (
+            // The rating box: the average, and a click opens the review box
+            <button className="stat rate-stat" title="Rate this area" onClick={() => openAs("review")}>
+              <div className="k">Rating</div>
+              <div className="v">
+                {rating.count ? (
+                  <>
+                    <Icon d={STAR} size={16} weight={2} />
+                    {rating.avg.toFixed(1)}
+                  </>
+                ) : (
+                  <span className="rate-none">No ratings</span>
+                )}
+              </div>
+              <span className="v2">
+                {rating.count ? `${rating.count} review${rating.count === 1 ? "" : "s"}` : "Be the first"}
+              </span>
+            </button>
+          )}
+          {CONFIG.votes && !released && (
             // The votes box is the upvote button: click to vote, click again to take it back
             <button
               className={"stat vote-stat" + (voted ? " on" : "")}
@@ -653,6 +797,8 @@ export function DetailPanel({ area: a }: { area: Area }) {
             </HoverTip>
           )}
         </div>
+
+        <LinesToggle area={a} />
 
         {/* Photos / Places / Routes tabs */}
         {CONFIG.database && <Media key={"media-" + a.id} area={a} />}

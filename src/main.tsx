@@ -6,8 +6,11 @@ import "./styles.css";
 import { App } from "./App";
 import { Admin } from "./components/Admin";
 
+// The vote page (components/NextVote.tsx, ?vote) is switched off for now
+const page = new URLSearchParams(location.search);
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {new URLSearchParams(location.search).has("admin") ? <Admin /> : <App />}
+    {page.has("admin") ? <Admin /> : <App />}
   </StrictMode>,
 );

@@ -1,7 +1,9 @@
+import logoFull from "../assets/logo-full.png";
 import logo from "../assets/logo.jpg";
 import { CONFIG } from "../lib/config";
 import { useStore } from "../lib/store";
 import { AreaList } from "./AreaList";
+import { HelpMenu } from "./HelpMenu";
 import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
 import { SearchInput } from "./SearchInput";
@@ -19,16 +21,17 @@ export function Sidebar() {
       <div className="sb-scroll">
         <div className="sb-sec sb-top">
           <div className="brand">
-            <div className="sign" aria-hidden="true">
+            <button className="sign" aria-label="View the logo" onClick={() => patch({ lightbox: logoFull })}>
               <div className="sign-in">
                 <img src={logo} alt="" />
               </div>
-            </div>
+            </button>
             <div className="wordmark">
               <span className="wm-1">Smoother</span>
               <span className="wm-2">Roads</span>
             </div>
             <div className="sb-actions">
+              <HelpMenu />
               <HoverTip
                 className="ibtn-tip sb-toggle"
                 tip={collapsed ? "Expand sidebar" : "Collapse sidebar"}

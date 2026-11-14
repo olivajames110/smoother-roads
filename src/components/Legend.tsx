@@ -51,8 +51,26 @@ export function StatusFilter() {
 
 // Map key: what the cluster colours mean
 export function Legend() {
+  const showLines = useStore((s) => s.showLines);
+  const setShowLines = useStore((s) => s.setShowLines);
+  const hasLines = useStore((s) => Object.keys(s.lineIndex ?? {}).length > 0);
   return (
     <div className="legend">
+      {hasLines && (
+        <button
+          className={"lg-lines" + (showLines ? " on" : "")}
+          role="switch"
+          aria-checked={showLines}
+          title="Show every smoothed street in released areas (zoom in to see them)"
+          onClick={() => setShowLines(!showLines)}
+        >
+          <i className="lg-line" />
+          Road coverage detail
+          <span className="lt-switch" aria-hidden="true">
+            <i />
+          </span>
+        </button>
+      )}
       <div className="grp sizes">
         <span><i style={{ background: "var(--c-sm)" }} />1–4</span>
         <span><i style={{ background: "var(--c-md)" }} />5–14</span>

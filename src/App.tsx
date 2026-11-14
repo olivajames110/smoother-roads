@@ -9,6 +9,7 @@ import { MapView } from "./components/MapView";
 import { Gallery, Lightbox, Toast } from "./components/Overlays";
 import { Panel } from "./components/Panel";
 import { RequestIntro } from "./components/RequestIntro";
+import { WhatsNew } from "./components/WhatsNew";
 import { Sidebar } from "./components/Sidebar";
 import { useStore } from "./lib/store";
 
@@ -27,7 +28,11 @@ export function App() {
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo")) {
       import("./lib/demo").then((m) => init(m.demoAreas()));
     } else {
-      init();
+      // ?area=<id> (links from the vote page): open that area once the areas are in
+      const id = new URLSearchParams(location.search).get("area");
+      init().then(() => {
+        if (id && useStore.getState().areas.some((a) => a.id === id)) useStore.getState().openDetail(id);
+      });
     }
   }, []);
 
@@ -79,6 +84,7 @@ export function App() {
       <Gallery />
       <Toast />
       <RequestIntro />
+      <WhatsNew />
     </div>
   );
 }

@@ -1,6 +1,7 @@
+import { CONFIG } from "../lib/config";
 import { useEffect, useRef, useState } from "react";
 import { approvePoi, deletePoi, MAX_POINTS, pointLabel, routePoints, TIMES, timeLabel } from "../lib/pois";
-import { useStore } from "../lib/store";
+import { POI_TIP_KEY, useStore } from "../lib/store";
 import type { Area, AreaPoi, LatLng } from "../lib/types";
 import { Icon } from "./Icon";
 
@@ -75,7 +76,7 @@ const plural = (w: string) =>
         : w + "s";
 
 
-function Row({ poi: p }: { poi: AreaPoi }) {
+export function Row({ poi: p }: { poi: AreaPoi }) {
   const focus = useStore((s) => s.poiFocus);
   const admin = useStore((s) => s.admin);
   const patch = useStore((s) => s.patch);
@@ -98,16 +99,19 @@ function Row({ poi: p }: { poi: AreaPoi }) {
       () => showToast("Couldn't copy", true),
     );
   };
-  const meta = route
+  // picked: the facts on one line and the whole description under them; otherwise one short line
+  const open = focus === p.id && !!p.note;
+  const meta = (route
     ? [
         `${miles(routePoints(p)).toFixed(1)} mi`,
         p.via.length ? `${p.via.length} stop${p.via.length === 1 ? "" : "s"}` : "",
         p.time ? `Best at ${timeLabel(p.time).toLowerCase()}` : "",
-        p.note,
+        open ? "" : p.note,
       ]
-        .filter(Boolean)
-        .join(" · ")
-    : [p.category, p.note].filter(Boolean).join(" · ");
+    : [p.category, open ? "" : p.note]
+  )
+    .filter(Boolean)
+    .join(" · ");
   // the row's buttons show on hover (and on the one picked), so the list reads cleanly
 
   return (
@@ -117,7 +121,7 @@ function Row({ poi: p }: { poi: AreaPoi }) {
       className={"poi" + (focus === p.id ? " on" : "") + (p.approved ? "" : " waiting")}
       onClick={show}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), show())}
-      title="Show on the map"
+      title={focus === p.id ? "Show on the map" : p.note ? "Show on the map and read the description" : "Show on the map"}
     >
       <span className="poi-ico" style={{ color: colorOf(p), background: colorOf(p) + "1a" }}>
         <Icon d={iconOf(p)} size={15} weight={2} />
@@ -128,6 +132,7 @@ function Row({ poi: p }: { poi: AreaPoi }) {
           {!p.approved && <span className="tag t-waiting">Waiting</span>}
         </span>
         <span className="poi-meta">{meta || (p.approved ? "" : `Suggested by ${p.author}`)}</span>
+        {open && <span className="poi-note">{p.note}</span>}
       </span>
       {admin && !p.approved && (
         <button
@@ -295,25 +300,18 @@ function Suggest({ kind }: { kind: "place" | "route" }) {
   );
 }
 
-const TIP_OFF = "sr-poi-tip-off";
-const readTipOff = () => {
-  try {
-    return localStorage.getItem(TIP_OFF) === "1";
-  } catch {
-    return false;
-  }
-};
 
 // Places or routes in an area: search, filter by kind (or a route's best time), click one to see it
 // on the map; anyone can suggest more (the admin adds and edits)
-export function PoiList({ area: a, kind }: { area: Area; kind: "place" | "route" }) {
-  const admin = useStore((s) => s.admin);
+export function PoiList({ area: a, kind, preview }: { area: Area; kind: "place" | "route"; preview?: boolean }) {
+  const admin = useStore((s) => s.admin) && !preview;
   const draft = useStore((s) => s.poiDraft);
   const patch = useStore((s) => s.patch);
   const [all, setAll] = useState(false);
   const [q, setQ] = useState("");
   const [group, setGroup] = useState<string | null>(null);
-  const [tipOff, setTipOff] = useState(readTipOff);
+  const tipOff = useStore((s) => s.poiTipOff);
+  const hideTipKey = useStore((s) => s.hideTip);
   // the chip row scrolls sideways: faded edges where more chips are hidden
   const chips = useRef<HTMLDivElement>(null);
   const [edges, setEdges] = useState({ l: false, r: false });
@@ -383,17 +381,30 @@ export function PoiList({ area: a, kind }: { area: Area; kind: "place" | "route"
 
   const add = () =>
     patch({ poiDraft: { kind, name: "", note: "", points: [] }, poiPick: true, pinMode: false, poiFocus: null });
-  const hideTip = () => {
-    setTipOff(true);
-    try {
-      localStorage.setItem(TIP_OFF, "1");
-    } catch {
-      /* private window: hidden for now */
-    }
-  };
+  const hideTip = () => hideTipKey(POI_TIP_KEY);
 
   return (
     <>
+      {(!tipOff || preview) && (
+        <div className="poi-tip">
+          <Icon name="alert" size={14} />
+          <span>
+            The {word} below are available in{" "}
+            {CONFIG.gpsUrl ? (
+              <a href={CONFIG.gpsUrl} target="_blank" rel="noopener">
+                Street GPS
+              </a>
+            ) : (
+              "Street GPS"
+            )}
+            {kind === "place" ? ": drive or teleport to any of them." : ": press Start to drive one."}
+          </span>
+          <button className="poi-tip-x" title="Hide" onClick={hideTip}>
+            <Icon d='<path d="M18 6 6 18M6 6l12 12"/>' size={13} weight={2.4} />
+          </button>
+        </div>
+      )}
+
       <div className="poi-bar">
         <div className="search poi-search">
           <Icon name="search" size={15} />
@@ -485,19 +496,6 @@ export function PoiList({ area: a, kind }: { area: Area; kind: "place" | "route"
         </>
       )}
 
-      {!tipOff && (
-        <div className="poi-tip">
-          <Icon name="alert" size={14} />
-          <span>
-            {kind === "place"
-              ? "Places also appear in the Street GPS mod, so you can drive or teleport to them."
-              : "Routes also appear in the Street GPS mod: Start teleports you there and sets the time of day."}
-          </span>
-          <button className="poi-tip-x" title="Hide" onClick={hideTip}>
-            <Icon d='<path d="M18 6 6 18M6 6l12 12"/>' size={13} weight={2.4} />
-          </button>
-        </div>
-      )}
     </>
   );
 }

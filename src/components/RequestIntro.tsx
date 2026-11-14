@@ -13,18 +13,13 @@ const SIZES = [
 export function RequestIntro() {
   const go = useStore((s) => s.requestIntro);
   const patch = useStore((s) => s.patch);
+  const hideTip = useStore((s) => s.hideTip);
   const [never, setNever] = useState(false);
   const open = !!go;
 
   const close = () => patch({ requestIntro: null });
   const proceed = () => {
-    if (never) {
-      try {
-        localStorage.setItem(INTRO_KEY, "1");
-      } catch {
-        /* private window */
-      }
-    }
+    if (never) hideTip(INTRO_KEY);
     close();
     go?.();
   };

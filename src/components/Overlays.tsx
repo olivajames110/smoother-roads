@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import logoFull from "../assets/logo-full.png";
 import { approvePhoto, confirmDelete, deletePhoto } from "../lib/photos";
 import { useStore } from "../lib/store";
 import { Icon } from "./Icon";
@@ -8,7 +9,7 @@ export function Lightbox() {
   const patch = useStore((s) => s.patch);
   return (
     <div className={"lightbox" + (image ? " show" : "")} onClick={() => patch({ lightbox: null })}>
-      {image && <img src={image} alt="Screenshot" />}
+      {image && <img className={image === logoFull ? "lb-logo" : ""} src={image} alt="" />}
     </div>
   );
 }
