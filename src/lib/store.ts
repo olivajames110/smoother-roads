@@ -3,6 +3,7 @@ import { CONFIG } from "./config";
 import { addComment, amAdmin, editReview, fetchMyReviews } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
 import { fetchLineIndex, fetchLines } from "./lines";
+import { logVisit } from "./visits";
 import { reorderPhotos, uploadPhoto } from "./photos";
 import { addRequest } from "./requests";
 import { setVote } from "./votes";
@@ -130,6 +131,7 @@ interface Store {
   fly: FlyRequest | null;
   requestIntro: (() => void) | null; // The "before you request" note is open; runs this on Proceed
   newsOpen: boolean; // The "what's new" note is open
+  visitsOpen: boolean; // Admin: the Visitors window is open
   poiTipOff: boolean; // The Street GPS tip above places and routes was dismissed
   lineIndex: Record<string, number>; // Released areas with a smoothed-roads file: id -> road km
   showLines: boolean; // Draw smoothed roads: every released area in view, and the open one (remembered in this browser)
@@ -212,6 +214,7 @@ export const useStore = create<Store>((set, get) => {
     requestIntro: null,
     composeNonce: 0,
     newsOpen: false,
+    visitsOpen: false,
     poiTipOff: isOff(POI_TIP_KEY),
     lineIndex: {},
     showLines: readJson<boolean>(LINES_KEY, false),
@@ -258,6 +261,7 @@ export const useStore = create<Store>((set, get) => {
       // Signed in on ?admin: admin options show in the panel, and hidden items stay listed
       const admin = !demo && CONFIG.database && (await amAdmin().catch(() => false));
       set({ admin, areas: demo ?? (await loadAreas(admin)), loaded: true });
+      if (!demo && CONFIG.database) logVisit().catch(() => {}); // after the sign-in check, so the admin is skipped
       if (!demo && CONFIG.database) fetchMyReviews().then((myReviews) => set({ myReviews }), () => {});
       fetchLineIndex().then((lineIndex) => {
         set({ lineIndex });

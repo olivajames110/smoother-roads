@@ -10,6 +10,7 @@ import { Gallery, Lightbox, Toast } from "./components/Overlays";
 import { Panel } from "./components/Panel";
 import { RequestIntro } from "./components/RequestIntro";
 import { WhatsNew } from "./components/WhatsNew";
+import { Visitors } from "./components/Visitors";
 import { Sidebar } from "./components/Sidebar";
 import { useStore } from "./lib/store";
 
@@ -71,6 +72,7 @@ export function App() {
                 <div className="dev-bar dev-float">
                   <span className="dev">DEV</span>
                   <span className="grow">Signed in as the dev</span>
+                  <button onClick={() => patch({ visitsOpen: true })}>Visitors</button>
                   <a href={import.meta.env.BASE_URL + "?admin"}>Admin page</a>
                   <button onClick={() => adminAction(signOut, "Signed out")}>Sign out</button>
                 </div>
@@ -85,6 +87,7 @@ export function App() {
       <Toast />
       <RequestIntro />
       <WhatsNew />
+      <Visitors />
     </div>
   );
 }
