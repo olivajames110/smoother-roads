@@ -76,7 +76,15 @@ function saveCollapsed(c: Set<string>) {
 }
 const newDraft = (): Draft => ({ type: "radius", center: null, radius: 3000, points: [], closed: false });
 const newForm = (): SubmitForm => ({ name: "", region: "", icao: "", notes: "", cat: "city" });
-const newComment = (): CommentDraft => ({ type: "feedback", text: "", image: null, pin: null, replyTo: null, rating: 0 });
+const newComment = (): CommentDraft => ({
+  type: "feedback",
+  text: "",
+  image: null,
+  pin: null,
+  path: [],
+  replyTo: null,
+  rating: 0,
+});
 
 let demoMode = false;
 let flyNonce = 0;
@@ -115,6 +123,7 @@ interface Store {
   placeQuery: string;
   placeNote: string;
   pinMode: boolean;
+  routeMode: boolean; // Map clicks add points to the improvement route being drawn
   comment: CommentDraft;
   myReviews: Set<string>; // ids of this browser's own reviews (it can change them)
   commenter: string;
@@ -241,6 +250,7 @@ export const useStore = create<Store>((set, get) => {
     placeQuery: "",
     placeNote: "",
     pinMode: false,
+    routeMode: false,
     comment: newComment(),
     myReviews: new Set(),
     commenter: savedName(),
@@ -389,7 +399,16 @@ export const useStore = create<Store>((set, get) => {
     },
 
     closePanel: () =>
-      set({ panel: null, selectedId: null, pinMode: false, spot: null, spotNote: "", poiDraft: null, poiPick: false }),
+      set({
+        panel: null,
+        selectedId: null,
+        pinMode: false,
+        routeMode: false,
+        spot: null,
+        spotNote: "",
+        poiDraft: null,
+        poiPick: false,
+      }),
 
     zoomTo: (a) => fly(boundsOf(a.shape), 13),
     flyToPoint: (p, zoom = 16) => fly([p, p], zoom),
@@ -453,11 +472,13 @@ export const useStore = create<Store>((set, get) => {
               comment.pin,
               comment.replyTo ?? undefined,
               review ? comment.rating : undefined,
+              comment.type === "improve" ? comment.path : undefined,
             );
             set({
               areas: get().areas.map((a) => (a.id === selectedId ? { ...a, comments: [...a.comments, saved] } : a)),
               comment: newComment(),
               pinMode: false,
+              routeMode: false,
               myReviews: review ? new Set([...get().myReviews, saved.id]) : get().myReviews,
             });
           }
@@ -476,7 +497,9 @@ export const useStore = create<Store>((set, get) => {
                 ? "You've already reviewed this area."
                 : m.includes("not_released")
                   ? "Only released areas can be reviewed."
-                  : get().admin && review && (m.includes("type_check") || m.includes("rating"))
+                  : get().admin && m.includes("path")
+                    ? "Run supabase/023_improve_routes.sql in Supabase first"
+                    : get().admin && review && (m.includes("type_check") || m.includes("rating"))
                     ? "Run supabase/021_area_reviews.sql in Supabase first"
                     : get().admin && m.includes("type_check")
                       ? "Run supabase/013_improve_comments.sql in Supabase first"
@@ -496,11 +519,12 @@ export const useStore = create<Store>((set, get) => {
         rating: review ? comment.rating : undefined,
         image: comment.image ?? undefined,
         pin: comment.pin ?? undefined,
+        path: comment.type === "improve" && comment.path.length > 1 ? comment.path : undefined,
         date: Date.now(),
         local: true,
       };
       const next = areas.map((a) => (a.id === selectedId ? { ...a, comments: [...a.comments, posted] } : a));
-      set({ areas: next, comment: newComment(), pinMode: false });
+      set({ areas: next, comment: newComment(), pinMode: false, routeMode: false });
       persist(next);
       get().showToast("Comment posted");
     },
@@ -625,7 +649,13 @@ export const useStore = create<Store>((set, get) => {
     setRadius: (radius) => set({ draft: { ...get().draft, radius } }),
 
     onMapPoint(p) {
-      const { pinMode, panel, draft, poiPick, poiDraft } = get();
+      const { pinMode, routeMode, panel, draft, poiPick, poiDraft } = get();
+      if (routeMode) {
+        // an improvement route: each click adds the next point, until "Done"
+        const path = [...get().comment.path, p].slice(0, MAX_POINTS);
+        set({ comment: { ...get().comment, path, pin: null }, routeMode: path.length < MAX_POINTS });
+        return;
+      }
       if (poiPick && poiDraft) {
         // every point inside the area's coverage: the GPS only sends people onto smoothed roads
         const area = get().areas.find((a) => a.id === get().selectedId);

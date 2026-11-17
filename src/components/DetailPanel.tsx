@@ -11,6 +11,8 @@ import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
 import { formatNotes, withLinks } from "./LinkedText";
 import { Media } from "./Media";
+import { ROUTE } from "./Pois";
+import { MAX_POINTS, pointLabel } from "../lib/pois";
 
 const COMMENT_TYPES: Record<CommentType, string> = {
   review: "Review",
@@ -193,6 +195,7 @@ function RequestNote({ area: a }: { area: Area }) {
 function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
   const flyToPoint = useStore((s) => s.flyToPoint);
+  const flyToBounds = useStore((s) => s.flyToBounds);
   const admin = useStore((s) => s.admin);
   const adminAction = useStore((s) => s.adminAction);
   const setComment = useStore((s) => s.setComment);
@@ -223,11 +226,18 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
         )}
         {c.text && <p>{c.dev ? withLinks(c.text) : c.text}</p>}
         {c.image && <img className="cmt-img" src={c.image} alt="Attached screenshot" onClick={() => patch({ lightbox: c.image })} />}
-        {c.pin && (
-          <button className="link" onClick={() => flyToPoint(c.pin!)}>
-            <Icon name="pin" size={14} />
-            View location on map
+        {c.path ? (
+          <button className="link" onClick={() => flyToBounds(c.path!)}>
+            <Icon d={ROUTE} size={14} />
+            View route on map
           </button>
+        ) : (
+          c.pin && (
+            <button className="link" onClick={() => flyToPoint(c.pin!)}>
+              <Icon name="pin" size={14} />
+              View location on map
+            </button>
+          )
         )}
         {admin && (
           <div className="cmt-admin">
@@ -250,6 +260,7 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
 function Compose() {
   const comment = useStore((s) => s.comment);
   const pinMode = useStore((s) => s.pinMode);
+  const routeMode = useStore((s) => s.routeMode);
   const setComment = useStore((s) => s.setComment);
   const patch = useStore((s) => s.patch);
   const postComment = useStore((s) => s.postComment);
@@ -283,12 +294,32 @@ function Compose() {
   // Folds the box away; anything typed stays for when it opens again
   const fold = () => {
     setOpen(false);
-    patch({ pinMode: false });
+    patch({ pinMode: false, routeMode: false });
   };
 
   const cancel = () => {
     fold();
-    setComment({ text: "", pin: null, replyTo: null, image: null });
+    setComment({ text: "", pin: null, path: [], replyTo: null, image: null });
+  };
+
+  // An improvement can mark one spot or a route (the roads to smooth, in order); other types a spot
+  const canRoute = comment.type === "improve" && !admin;
+  const path = comment.path ?? [];
+  const drawing = canRoute && (routeMode || path.length > 0);
+  useEffect(() => {
+    if (!canRoute && (routeMode || path.length)) {
+      patch({ routeMode: false });
+      setComment({ path: [] });
+    }
+  }, [canRoute]);
+  const startRoute = () => {
+    setComment({ pin: null });
+    patch({ pinMode: false, routeMode: true });
+  };
+  const removePoint = (i: number) => setComment({ path: path.filter((_, j) => j !== i) });
+  const clearRoute = () => {
+    patch({ routeMode: false });
+    setComment({ path: [] });
   };
 
   // Closes again once a comment is posted
@@ -412,30 +443,80 @@ function Compose() {
         value={comment.text}
         onChange={(e) => setComment({ text: e.target.value })}
       />
-      <div className="loc-row">
-        <button
-          className={"loc-btn" + (pinMode ? " picking" : comment.pin ? " set" : "")}
-          aria-pressed={pinMode}
-          title={comment.pin ? "Click, then click the map to move the pin" : "Attach a map location to this comment"}
-          onClick={() => patch({ pinMode: !pinMode })}
-        >
-          {pinMode ? <span className="loc-dot" /> : <Icon name="pin" size={15} />}
-          {pinMode
-            ? "Click a spot on the map…"
-            : comment.pin
-              ? `${comment.pin[0].toFixed(4)}, ${comment.pin[1].toFixed(4)}`
-              : "Add map location"}
-        </button>
-        {(pinMode || comment.pin) && (
+      {drawing ? (
+        <div className="loc-route">
+          <div className="loc-route-head">
+            <span>Route to smooth</span>
+            <button className="link" onClick={clearRoute}>
+              Remove route
+            </button>
+          </div>
+          <div className="stops improve">
+            {path.map((p, i) => (
+              <div key={i} className="stop">
+                <span className="stop-pin">{pointLabel(i, path.length)}</span>
+                <span className="stop-t">
+                  {i === 0 ? "Start" : i === path.length - 1 && path.length > 1 ? "Finish" : `Point ${i}`}
+                  <span>
+                    {p[0].toFixed(5)}, {p[1].toFixed(5)}
+                  </span>
+                </span>
+                <button className="ibtn stop-x" title="Remove this point" onClick={() => removePoint(i)}>
+                  <Icon d='<path d="M18 6 6 18M6 6l12 12"/>' size={13} weight={2.4} />
+                </button>
+              </div>
+            ))}
+            <div className="stops-btns">
+              <button
+                className={"loc-btn" + (routeMode ? " picking" : "")}
+                disabled={!routeMode && path.length >= MAX_POINTS}
+                onClick={() => patch({ routeMode: !routeMode })}
+              >
+                {routeMode ? <span className="loc-dot" /> : <Icon d={ROUTE} size={15} />}
+                {routeMode
+                  ? path.length === 0
+                    ? "Click the map to set the start…"
+                    : "Adding points… click to stop"
+                  : "Add more points"}
+              </button>
+            </div>
+            <p className="stops-hint">
+              Click along the road in order; the last point is the finish. Drag a pin on the map to move it.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="loc-row">
           <button
-            className="loc-x"
-            title={pinMode ? "Stop picking" : "Remove location"}
-            onClick={() => (pinMode ? patch({ pinMode: false }) : setComment({ pin: null }))}
+            className={"loc-btn" + (pinMode ? " picking" : comment.pin ? " set" : "")}
+            aria-pressed={pinMode}
+            title={comment.pin ? "Click, then click the map to move the pin" : "Attach a map location to this comment"}
+            onClick={() => patch({ pinMode: !pinMode })}
           >
-            <Icon name="x" size={13} weight={2.6} />
+            {pinMode ? <span className="loc-dot" /> : <Icon name="pin" size={15} />}
+            {pinMode
+              ? "Click a spot on the map…"
+              : comment.pin
+                ? `${comment.pin[0].toFixed(4)}, ${comment.pin[1].toFixed(4)}`
+                : "Add map location"}
           </button>
-        )}
-      </div>
+          {(pinMode || comment.pin) && (
+            <button
+              className="loc-x"
+              title={pinMode ? "Stop picking" : "Remove location"}
+              onClick={() => (pinMode ? patch({ pinMode: false }) : setComment({ pin: null }))}
+            >
+              <Icon name="x" size={13} weight={2.6} />
+            </button>
+          )}
+          {canRoute && !pinMode && !comment.pin && (
+            <button className="loc-btn" title="Mark the roads to smooth, start to finish" onClick={startRoute}>
+              <Icon d={ROUTE} size={15} />
+              Draw a route
+            </button>
+          )}
+        </div>
+      )}
       <div className="attach">
         {replyingTo && (
           <div className="pinchip">
@@ -467,7 +548,7 @@ function Compose() {
         )}
         <button
           className="btn cyan sm"
-          disabled={(review ? !comment.rating : !comment.text.trim()) || posting}
+          disabled={(review ? !comment.rating : !comment.text.trim()) || (drawing && path.length < 2) || posting}
           onClick={postComment}
         >
           {posting ? "Posting…" : review && mine ? "Update review" : "Post " + COMMENT_TYPES[comment.type]}

@@ -17,8 +17,11 @@ export function Media({ area: a, preview, start }: { area: Area; preview?: boole
   const places = (a.pois ?? []).filter((p) => p.kind === "place" && p.approved).length;
   const routes = (a.pois ?? []).filter((p) => p.kind === "route" && p.approved).length;
   const showPhotos = CONFIG.photos && (photos > 0 || admin);
+  // Places and routes go public when the area is released; until then only the admin sees them
+  const showPois = a.status === "released" || admin || !!preview;
   const [tab, setTab] = useState<Tab>(start ?? (showPhotos && photos > 0 ? "photos" : "place"));
-  const current: Tab = tab === "photos" && !showPhotos ? "place" : tab;
+  const current: Tab = !showPois ? "photos" : tab === "photos" && !showPhotos ? "place" : tab;
+  if (!showPois && !showPhotos) return null;
 
   const tabBtn = (key: Tab, icon: string | null, label: string, n: number) => (
     <button
@@ -37,8 +40,8 @@ export function Media({ area: a, preview, start }: { area: Area; preview?: boole
     <div className={"media-sec" + (preview ? " preview" : "")}>
       <div className="poi-tabs" role="tablist">
         {showPhotos && tabBtn("photos", null, "Photos", photos)}
-        {tabBtn("place", STAR, "Places", places)}
-        {tabBtn("route", ROUTE, "Routes", routes)}
+        {showPois && tabBtn("place", STAR, "Places", places)}
+        {showPois && tabBtn("route", ROUTE, "Routes", routes)}
       </div>
       <div className="media-body" inert={preview}>
         {current === "photos" ? <Photos area={a} bare /> : <PoiList key={current} area={a} kind={current} preview={preview} />}

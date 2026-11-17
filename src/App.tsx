@@ -43,6 +43,7 @@ export function App() {
       const s = useStore.getState();
       if (s.lightbox) s.patch({ lightbox: null });
       else if (s.pinMode) s.patch({ pinMode: false });
+      else if (s.routeMode) s.patch({ routeMode: false });
       else if (s.poiPick) s.patch({ poiPick: false });
       else if (s.panel) s.closePanel();
     };

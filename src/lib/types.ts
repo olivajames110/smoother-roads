@@ -18,6 +18,7 @@ export interface AreaComment {
   text: string;
   image?: string;
   pin?: LatLng;
+  path?: LatLng[]; // Improvement requests: a route to smooth, start to finish (023_improve_routes.sql)
   date: number;
   local?: boolean; // Only stored in this browser until the database exists
   hidden?: boolean; // Hidden from visitors; only an admin receives these
@@ -111,6 +112,7 @@ export interface CommentDraft {
   text: string;
   image: string | null;
   pin: LatLng | null;
+  path: LatLng[]; // Improvement requests: a route, picked on the map (empty: none)
   replyTo: string | null; // Admin replies: the comment being answered
   rating: number; // A review's stars (0 = not picked yet)
 }

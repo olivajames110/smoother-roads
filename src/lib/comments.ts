@@ -3,6 +3,7 @@ import type { AreaComment, CommentType, LatLng, Reason, Status } from "./types";
 
 const BASE = "id, area_id, author, dev, type, body, pin_lat, pin_lon, hidden, created_at, reply_to";
 const COLUMNS = BASE + ", rating"; // rating: 021_area_reviews.sql
+const WITH_PATH = COLUMNS + ", path"; // path: 023_improve_routes.sql
 
 interface Row {
   id: string;
@@ -17,6 +18,7 @@ interface Row {
   created_at: string;
   reply_to: string | null;
   rating?: number | null;
+  path?: LatLng[] | null;
 }
 
 const toComment = (r: Row): AreaComment => ({
@@ -30,12 +32,14 @@ const toComment = (r: Row): AreaComment => ({
   hidden: r.hidden,
   replyTo: r.reply_to ?? undefined,
   rating: r.rating ?? undefined,
+  path: Array.isArray(r.path) && r.path.length > 1 ? r.path : undefined,
 });
 
 export async function fetchComments() {
   const get = (cols: string) => sb.from("area_comments").select(cols).order("created_at").limit(5000);
-  let { data, error } = await get(COLUMNS);
-  // before 021_area_reviews.sql has run there's no rating column
+  let { data, error } = await get(WITH_PATH);
+  // before 023 / 021 have run there's no path / rating column
+  if (error) ({ data, error } = await get(COLUMNS));
   if (error) ({ data, error } = await get(BASE));
   if (error) throw error;
   const byArea = new Map<string, AreaComment[]>();
@@ -97,6 +101,7 @@ export async function addComment(
   pin: LatLng | null,
   replyTo?: string,
   rating?: number,
+  path?: LatLng[],
 ) {
   await ensureVisitor();
   const row: Record<string, unknown> = {
@@ -109,10 +114,17 @@ export async function addComment(
     reply_to: replyTo ?? null,
   };
   if (type === "review") row.rating = rating;
+  const route = type === "improve" && path && path.length > 1;
+  if (route) {
+    row.path = path;
+    // the start doubles as the pin, for anything that only shows pins
+    row.pin_lat = path[0][0];
+    row.pin_lon = path[0][1];
+  }
   const { data, error } = await sb
     .from("area_comments")
     .insert(row)
-    .select(type === "review" ? COLUMNS : BASE)
+    .select(route ? WITH_PATH : type === "review" ? COLUMNS : BASE)
     .single();
   if (error) throw error;
   return toComment(data as unknown as Row);

@@ -16,10 +16,10 @@ const ISSUE = "#dc2626";
 const IMPROVE = "#16a34a";
 const POI = "#7c3aed";
 
-// A place (★) or a route's start / finish (A, B)
-const poiIcon = (label: string, on: boolean) =>
+// A place (★) or a route's start / finish (A, B); color: an improvement route's pins (green)
+const poiIcon = (label: string, on: boolean, color?: string) =>
   L.divIcon({
-    html: `<div class="poi-pin${on ? " on" : ""}">${label}</div>`,
+    html: `<div class="poi-pin${on ? " on" : ""}"${color ? ` style="background:${color}"` : ""}>${label}</div>`,
     className: "poi-pin-wrap",
     iconSize: on ? [28, 28] : [22, 22],
     iconAnchor: on ? [14, 14] : [11, 11],
@@ -71,8 +71,8 @@ function tooltip(a: Area) {
 }
 
 function requestMenu(map: L.Map, e: L.LeafletMouseEvent) {
-  const { panel, pinMode } = useStore.getState();
-  if (pinMode || panel === "submit") return;
+  const { panel, pinMode, routeMode } = useStore.getState();
+  if (pinMode || routeMode || panel === "submit") return;
   const button = L.DomUtil.create("button", "btn cyan sm");
   button.innerHTML = svgHtml('<path d="M12 5v14M5 12h14"/>', 14, 2.6) + "Request Area";
   button.onclick = () => {
@@ -85,7 +85,7 @@ function requestMenu(map: L.Map, e: L.LeafletMouseEvent) {
 // While drawing or placing a pin, clicks on existing areas count as map clicks
 function pick(a: Area, e: L.LeafletMouseEvent) {
   const s = useStore.getState();
-  if (s.pinMode || s.poiPick || s.panel === "submit") s.onMapPoint([e.latlng.lat, wrapLon(e.latlng.lng)]);
+  if (s.pinMode || s.routeMode || s.poiPick || s.panel === "submit") s.onMapPoint([e.latlng.lat, wrapLon(e.latlng.lng)]);
   else s.openDetail(a.id);
 }
 
@@ -100,6 +100,8 @@ export function MapView() {
   const panel = useStore((s) => s.panel);
   const pinMode = useStore((s) => s.pinMode);
   const commentPin = useStore((s) => s.comment.pin);
+  const commentPath = useStore((s) => s.comment.path);
+  const routeMode = useStore((s) => s.routeMode);
   const spot = useStore((s) => s.spot);
   const poiFocus = useStore((s) => s.poiFocus);
   const poiDraft = useStore((s) => s.poiDraft);
@@ -311,13 +313,41 @@ export function MapView() {
     }
     if (spot) dot(spot, ISSUE);
     if (!CONFIG.database) return;
+    // improvement routes: a green line, A to B
+    const pathLine = (pts: LatLng[], drawing: boolean) => {
+      L.polyline(pts, { color: IMPROVE, weight: drawing ? 4 : 3, opacity: drawing ? 1 : 0.8 }).addTo(l.pins);
+    };
     for (const c of selected?.comments ?? []) {
+      if (c.path) {
+        pathLine(c.path, false);
+        const n = c.path.length;
+        [0, n - 1].forEach((i) =>
+          L.marker(c.path![i], { icon: poiIcon(pointLabel(i, n), false, IMPROVE) })
+            .bindTooltip(esc(c.author), { direction: "top", offset: [0, -10] })
+            .addTo(l.pins),
+        );
+        continue;
+      }
       if (c.pin)
         dot(c.pin, c.type === "issue" ? ISSUE : c.type === "improve" ? IMPROVE : ACCENT).bindTooltip(esc(c.author), {
           direction: "top",
         });
     }
     if (commentPin) dot(commentPin, ACCENT);
+    // the improvement route being drawn; its pins can be dragged to move them
+    if (commentPath?.length) {
+      if (commentPath.length > 1) pathLine(commentPath, true);
+      commentPath.forEach((pt, i) => {
+        L.marker(pt, { icon: poiIcon(pointLabel(i, commentPath.length), true, IMPROVE), zIndexOffset: 2000, draggable: true })
+          .on("dragend", (e) => {
+            const { lat, lng } = (e.target as L.Marker).getLatLng();
+            const st = useStore.getState();
+            const path = st.comment.path.map((q, j): LatLng => (j === i ? [lat, wrapLon(lng)] : q));
+            st.setComment({ path });
+          })
+          .addTo(l.pins);
+      });
+    }
     // the selected area's places (stars) and routes (A to B, dashed); the one picked is larger
     for (const p of selected?.pois ?? []) {
       if (p.id === poiDraft?.id) continue; // being edited: drawn below as the draft
@@ -370,7 +400,7 @@ export function MapView() {
           .addTo(l.pins);
       });
     }
-  }, [selected, commentPin, spot, poiFocus, poiDraft]);
+  }, [selected, commentPin, commentPath, spot, poiFocus, poiDraft]);
 
   useEffect(() => {
     const l = layers.current;
@@ -389,9 +419,9 @@ export function MapView() {
 
   // Toggled directly because a React className would wipe the classes Leaflet puts on this element
   useEffect(() => {
-    el.current!.classList.toggle("drawing", pinMode || !!poiPick || panel === "submit");
+    el.current!.classList.toggle("drawing", pinMode || routeMode || !!poiPick || panel === "submit");
     el.current!.classList.toggle("submitting", panel === "submit");
-  }, [pinMode, poiPick, panel]);
+  }, [pinMode, routeMode, poiPick, panel]);
 
   return <div id="map" ref={el} aria-label="Coverage map" />;
 }
