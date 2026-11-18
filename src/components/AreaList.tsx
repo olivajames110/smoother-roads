@@ -149,6 +149,9 @@ const VIEWS: { key: GroupBy; label: string; icon: string; section: "Group" | "So
 
 function ViewMenu({ group, count, onPick }: { group: GroupBy; count: number; onPick: (g: GroupBy) => void }) {
   const [open, setOpen] = useState(false);
+  const showHidden = useStore((s) => s.showHidden);
+  const setShowHidden = useStore((s) => s.setShowHidden);
+  const hiddenAreas = useStore((s) => s.areas.filter((a) => a.hidden).length);
   const box = useRef<HTMLDivElement>(null);
   const current = VIEWS.find((v) => v.key === group) ?? VIEWS[0];
 
@@ -203,6 +206,22 @@ function ViewMenu({ group, count, onPick }: { group: GroupBy; count: number; onP
                 ))}
             </div>
           ))}
+          {hiddenAreas > 0 && (
+            <>
+              <div className="pop-sep" />
+              <div className="pop-label">Show</div>
+              <button
+                role="menuitemcheckbox"
+                aria-checked={showHidden}
+                className={"pop-item" + (showHidden ? " on" : "")}
+                onClick={() => setShowHidden(!showHidden)}
+              >
+                <Icon name="eyeOff" size={15} />
+                Hidden areas ({hiddenAreas})
+                {showHidden && <Icon name="check" size={15} weight={2.4} />}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

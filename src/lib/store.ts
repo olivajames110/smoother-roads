@@ -42,6 +42,7 @@ const isOff = (key: string) => {
 // The list's filters and view, remembered in this browser
 const HIDDEN_KEY = "sr-hidden-statuses";
 const GROUP_KEY = "sr-group";
+const SHOW_HIDDEN_KEY = "sr-show-hidden";
 function readJson<T>(key: string, fallback: T): T {
   try {
     const v = localStorage.getItem(key);
@@ -112,6 +113,7 @@ interface Store {
   view: View;
   hidden: Set<FilterKey>; // Status chips switched off
   group: GroupBy;
+  showHidden: boolean; // Admin: list areas hidden from visitors (off by default)
   collapsed: Set<string>;
   query: string;
   sort: SortBy;
@@ -164,6 +166,7 @@ interface Store {
   showTips: () => void;
   toggleStatus: (k: FilterKey) => void;
   setGroup: (g: GroupBy) => void;
+  setShowHidden: (on: boolean) => void;
   toggleGroup: (key: string) => void;
   setGroups: (keys: string[], shut: boolean) => void;
   setView: (v: View) => void;
@@ -233,6 +236,7 @@ export const useStore = create<Store>((set, get) => {
     poiDraft: null,
     poiPick: false,
     group: readJson<GroupBy>(GROUP_KEY, "country"),
+    showHidden: readJson<boolean>(SHOW_HIDDEN_KEY, false),
     collapsed: (() => {
       try {
         return new Set<string>(JSON.parse(localStorage.getItem(COLLAPSED_KEY) ?? "[]"));
@@ -357,6 +361,11 @@ export const useStore = create<Store>((set, get) => {
     setGroup(group) {
       writeJson(GROUP_KEY, group);
       set({ group });
+    },
+
+    setShowHidden(showHidden) {
+      writeJson(SHOW_HIDDEN_KEY, showHidden);
+      set({ showHidden });
     },
 
     toggleGroup(key) {
