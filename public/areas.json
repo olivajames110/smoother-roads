@@ -1,6 +1,6 @@
 {
-  "updated": "2026-11-11",
-  "modVersion": "0.4.0",
+  "updated": "2026-11-19",
+  "modVersion": "0.6.1",
   "areas": [
     {
       "id": "farmingdale-ny",
@@ -324,7 +324,7 @@
       "roadKm": 2300.3,
       "added": "2026-11-04",
       "package": "smoother-roads-salt-lake-city-ut",
-      "version": "0.2.0"
+      "version": "0.6.1"
     },
     {
       "id": "ogden-ut",
