@@ -839,7 +839,9 @@ export function DetailPanel({ area: a }: { area: Area }) {
           </div>
         )}
 
-        <div className="actions">
+        <LinesToggle area={a} />
+
+        <div className="actions act-bottom">
           {/* Released: download (every region is in the same flightsim.to download) */}
           {CONFIG.database && (
             <HoverTip
@@ -878,8 +880,6 @@ export function DetailPanel({ area: a }: { area: Area }) {
             </HoverTip>
           )}
         </div>
-
-        <LinesToggle area={a} />
 
         {/* Photos / Places / Routes tabs */}
         {CONFIG.database && <Media key={"media-" + a.id} area={a} />}

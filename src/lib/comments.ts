@@ -187,6 +187,13 @@ export async function signIn(email: string, password: string) {
 
 export const signOut = () => sb.auth.signOut();
 
+/** The signed-in session's access token and when it expires (ms), for the admin page's Copy button. */
+export async function accessToken() {
+  const { data } = await sb.auth.getSession();
+  const s = data.session;
+  return s ? { token: s.access_token, expires: (s.expires_at ?? 0) * 1000 } : null;
+}
+
 export async function amAdmin() {
   const { data } = await sb.auth.getSession();
   if (!data.session) return false;

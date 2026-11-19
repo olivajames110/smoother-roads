@@ -380,11 +380,13 @@ textarea{height:auto;padding:10px 12px;resize:vertical;min-height:76px;line-heig
 .poi-pin{width:100%;height:100%;border-radius:50%;background:#7c3aed;color:#fff;border:2px solid #fff;box-shadow:0 2px 6px rgba(16,24,40,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1}
 .poi-pin.on{background:#5b21b6;font-size:13px;box-shadow:0 0 0 4px rgba(124,58,237,.25),0 2px 8px rgba(16,24,40,.35)}
 
-/* Report issue / Request improvement: contained (filled) */
-.actions .report-btn{background:#dc2626;border-color:#dc2626;color:#fff}
-.actions .report-btn:hover{background:#b91c1c;border-color:#b91c1c}
-.actions .improve-btn{background:#16a34a;border-color:#16a34a;color:#fff}
-.actions .improve-btn:hover{background:#15803d;border-color:#15803d}
+/* Report issue / Request improvement: soft tinted, below the coverage toggle after a divider */
+.actions.act-bottom{margin-top:12px;padding-top:12px;border-top:1px solid var(--line-2)}
+.actions .report-btn{background:#fde4e4;border-color:#fde4e4;color:#b91c1c}
+.actions .report-btn:hover{background:#fbd3d3;border-color:#fbd3d3}
+.actions .improve-btn{background:#dcf5e3;border-color:#dcf5e3;color:#15803d}
+.actions .improve-btn:hover{background:#c9eed4;border-color:#c9eed4}
+.admin-token{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tip{flex:1;display:flex;position:relative}
 .request-menu .leaflet-popup-content-wrapper{padding:0;border-radius:11px;background:none;box-shadow:var(--shadow)}
 .request-menu .leaflet-popup-content{margin:0;line-height:1}

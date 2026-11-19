@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  accessToken,
   addComment,
   amAdmin,
   setHidden,
@@ -31,6 +32,28 @@ function Reply({ area, to, onDone }: { area: Area; to: string; onDone: () => voi
       >
         Reply
       </button>
+    </div>
+  );
+}
+
+/** Copies the current session's access token (it expires; signing out revokes it). */
+function TokenCopy() {
+  const [msg, setMsg] = useState("");
+  return (
+    <div className="admin-token">
+      <button
+        className="btn sm"
+        onClick={async () => {
+          const t = await accessToken();
+          if (!t) return setMsg("Not signed in");
+          await navigator.clipboard.writeText(t.token);
+          const at = new Date(t.expires).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+          setMsg(`Copied. Expires at ${at}; Sign out to revoke it sooner.`);
+        }}
+      >
+        Copy auth token
+      </button>
+      {msg && <span className="mut">{msg}</span>}
     </div>
   );
 }
@@ -119,6 +142,9 @@ export function Admin() {
         </button>
       </div>
       {error && <p className="admin-err">{error}</p>}
+
+      <h2>Auth token</h2>
+      <TokenCopy />
 
       <h2>Comments ({thread.length})</h2>
       {thread.length === 0 && <p className="mut">Nothing yet.</p>}
