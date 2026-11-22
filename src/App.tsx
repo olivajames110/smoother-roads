@@ -12,6 +12,7 @@ import { RequestIntro } from "./components/RequestIntro";
 import { WhatsNew } from "./components/WhatsNew";
 import { Visitors } from "./components/Visitors";
 import { Sidebar } from "./components/Sidebar";
+import { areaFromPath, syncPath } from "./lib/slug";
 import { useStore } from "./lib/store";
 
 export function App() {
@@ -29,12 +30,34 @@ export function App() {
     if (import.meta.env.DEV && new URLSearchParams(location.search).has("demo")) {
       import("./lib/demo").then((m) => init(m.demoAreas()));
     } else {
-      // ?area=<id> (links from the vote page): open that area once the areas are in
+      // /smoother-roads/<slug or id>, or ?area=<id> (older links): open that area once the areas are in
       const id = new URLSearchParams(location.search).get("area");
       init().then(() => {
-        if (id && useStore.getState().areas.some((a) => a.id === id)) useStore.getState().openDetail(id);
+        const { areas, openDetail } = useStore.getState();
+        const area = areaFromPath(areas) ?? areas.find((a) => a.id === id);
+        if (area) openDetail(area.id);
+        else syncPath(undefined, areas, false);
       });
     }
+  }, []);
+
+  // The address bar follows the open area; Back / Forward open or close areas
+  useEffect(() => {
+    const unsub = useStore.subscribe((s, prev) => {
+      if (!s.areas.length || s.selectedId === prev.selectedId) return;
+      syncPath(s.areas.find((a) => a.id === s.selectedId), s.areas, true);
+    });
+    const onPop = () => {
+      const s = useStore.getState();
+      const area = areaFromPath(s.areas);
+      if (area && area.id !== s.selectedId) s.openDetail(area.id);
+      else if (!area && s.selectedId) s.closePanel();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      unsub();
+      window.removeEventListener("popstate", onPop);
+    };
   }, []);
 
   useEffect(() => {
