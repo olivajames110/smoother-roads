@@ -303,7 +303,8 @@ function Suggest({ kind }: { kind: "place" | "route" }) {
 
 // Places or routes in an area: search, filter by kind (or a route's best time), click one to see it
 // on the map; anyone can suggest more (the admin adds and edits)
-export function PoiList({ area: a, kind, preview }: { area: Area; kind: "place" | "route"; preview?: boolean }) {
+// wide: on the area's full page (two columns, more rows before "Show more")
+export function PoiList({ area: a, kind, preview, wide }: { area: Area; kind: "place" | "route"; preview?: boolean; wide?: boolean }) {
   const admin = useStore((s) => s.admin) && !preview;
   const draft = useStore((s) => s.poiDraft);
   const patch = useStore((s) => s.patch);
@@ -374,7 +375,7 @@ export function PoiList({ area: a, kind, preview }: { area: Area; kind: "place" 
       (!group || groupOf(p) === group) &&
       (!needle || p.name.toLowerCase().includes(needle) || groupOf(p).toLowerCase().includes(needle)),
   );
-  const SHORT = 5; // the rest behind "Show more", so the panel stays short
+  const SHORT = wide ? 12 : 5; // the rest behind "Show more", so the panel stays short
   const list = all || needle ? matches : matches.slice(0, SHORT);
   const more = matches.length - list.length;
   const adding = !!draft && draft.kind === kind;
@@ -385,6 +386,23 @@ export function PoiList({ area: a, kind, preview }: { area: Area; kind: "place" 
 
   return (
     <>
+      <div className="poi-bar">
+        <div className="search poi-search">
+          <Icon name="search" size={15} />
+          <input
+            className="input"
+            placeholder={`Search ${word}`}
+            aria-label={`Search ${word}`}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </div>
+        <button className="poi-add" disabled={adding} onClick={add} title={admin ? `Add a ${kind}` : `Suggest a ${kind}`}>
+          <Icon d='<path d="M12 5v14M5 12h14"/>' size={14} weight={2.6} />
+          {admin ? "Add" : "Suggest"}
+        </button>
+      </div>
+
       {(!tipOff || preview) && (
         <div className="poi-tip">
           <Icon name="alert" size={14} />
@@ -404,23 +422,6 @@ export function PoiList({ area: a, kind, preview }: { area: Area; kind: "place" 
           </button>
         </div>
       )}
-
-      <div className="poi-bar">
-        <div className="search poi-search">
-          <Icon name="search" size={15} />
-          <input
-            className="input"
-            placeholder={`Search ${word}`}
-            aria-label={`Search ${word}`}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <button className="poi-add" disabled={adding} onClick={add} title={admin ? `Add a ${kind}` : `Suggest a ${kind}`}>
-          <Icon d='<path d="M12 5v14M5 12h14"/>' size={14} weight={2.6} />
-          {admin ? "Add" : "Suggest"}
-        </button>
-      </div>
 
       {groups.length > 1 && (
         <div className="poi-chips-wrap">

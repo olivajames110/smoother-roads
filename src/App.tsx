@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { signOut } from "./lib/comments";
 import { CONFIG } from "./lib/config";
+import { AreaPage } from "./components/AreaPage";
 import { Icon } from "./components/Icon";
 import { Leaderboard } from "./components/Leaderboard";
 import { Legend } from "./components/Legend";
@@ -23,6 +24,8 @@ export function App() {
   const beginRequest = useStore((s) => s.beginRequest);
   const admin = useStore((s) => s.admin);
   const adminAction = useStore((s) => s.adminAction);
+  // "More info": the open area as a full page over the map area
+  const full = useStore((s) => s.full && s.panel === "detail" && !!s.selectedId);
 
   useEffect(() => {
     const { init } = useStore.getState();
@@ -68,6 +71,7 @@ export function App() {
       else if (s.pinMode) s.patch({ pinMode: false });
       else if (s.routeMode) s.patch({ routeMode: false });
       else if (s.poiPick) s.patch({ poiPick: false });
+      else if (s.full && s.panel === "detail") s.patch({ full: false });
       else if (s.panel) s.closePanel();
     };
     window.addEventListener("keydown", onKey);
@@ -81,8 +85,9 @@ export function App() {
           <section className={"view map-view" + (sidebarOpen ? " sb-toggled" : "") + (sidebarCollapsed ? " sb-collapsed" : "")}>
             <Sidebar />
             <div className="scrim" onClick={() => patch({ sidebarOpen: false })} />
-            <div className="map-wrap">
+            <div className={"map-wrap" + (full ? " full" : "")}>
               <MapView />
+              {full && <AreaPage />}
               <Legend />
               <Panel />
               <MapHint />

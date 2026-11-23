@@ -121,6 +121,7 @@ interface Store {
   selectedId: string | null;
   hoveredId: string | null;
   panel: PanelMode;
+  full: boolean; // "More info": the open area as a full page over the map area, the map beside it
   draft: Draft;
   form: SubmitForm;
   placeQuery: string;
@@ -250,6 +251,7 @@ export const useStore = create<Store>((set, get) => {
     selectedId: null,
     hoveredId: null,
     panel: null,
+    full: false,
     draft: newDraft(),
     form: newForm(),
     placeQuery: "",
@@ -411,6 +413,7 @@ export const useStore = create<Store>((set, get) => {
     closePanel: () =>
       set({
         panel: null,
+        full: false,
         selectedId: null,
         pinMode: false,
         routeMode: false,
@@ -595,6 +598,7 @@ export const useStore = create<Store>((set, get) => {
       set({
         view: "map",
         panel: "submit",
+        full: false,
         selectedId: null,
         pinMode: false,
         spot: null,

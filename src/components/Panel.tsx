@@ -5,7 +5,8 @@ import { DetailPanel } from "./DetailPanel";
 import { SubmitPanel } from "./SubmitPanel";
 
 export function Panel() {
-  const panel = useStore((s) => s.panel);
+  const full = useStore((s) => s.full);
+  const panel = useStore((s) => (s.full && s.panel === "detail" ? null : s.panel)); // the full page replaces the detail panel
   const area = useStore((s) => s.areas.find((a) => a.id === s.selectedId));
 
   // Keep the last content on screen while the panel slides away
@@ -17,7 +18,7 @@ export function Panel() {
   return (
     <aside className={"panel" + (panel ? " open" : "")} inert={!panel}>
       {mode.current === "submit" && <SubmitPanel />}
-      {mode.current === "detail" && lastArea.current && <DetailPanel area={lastArea.current} />}
+      {mode.current === "detail" && !full && lastArea.current && <DetailPanel area={lastArea.current} />}
     </aside>
   );
 }

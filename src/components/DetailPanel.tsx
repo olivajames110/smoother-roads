@@ -14,7 +14,7 @@ import { Media } from "./Media";
 import { ROUTE } from "./Pois";
 import { MAX_POINTS, pointLabel } from "../lib/pois";
 
-const COMMENT_TYPES: Record<CommentType, string> = {
+export const COMMENT_TYPES: Record<CommentType, string> = {
   review: "Review",
   feedback: "Feedback",
   issue: "Issue",
@@ -30,7 +30,7 @@ const PROMPTS: Record<CommentType, { label: string; hint: string }> = {
   question: { label: "Question", hint: "Share your thoughts…" },
 };
 
-const STAR = '<path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/>';
+export const STAR = '<path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/>';
 
 // A row of 5 stars: shows a rating (halves included), or picks one when onPick is given
 export function Stars({ value, size = 14, onPick }: { value: number; size?: number; onPick?: (n: number) => void }) {
@@ -69,7 +69,7 @@ export function Stars({ value, size = 14, onPick }: { value: number; size?: numb
 const RATING_WORDS = ["", "Poor", "Fair", "Good", "Great", "Excellent"];
 
 // Admin: the area's notes, editable in place (saved to the database, shown to everyone)
-function NotesEditor({ area: a }: { area: Area }) {
+export function NotesEditor({ area: a }: { area: Area }) {
   const adminAction = useStore((s) => s.adminAction);
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(a.notes);
@@ -173,7 +173,7 @@ function NotesEditor({ area: a }: { area: Area }) {
 }
 
 // What the requester wrote when sending the request, shown first in Feedback like a comment
-function RequestNote({ area: a }: { area: Area }) {
+export function RequestNote({ area: a }: { area: Area }) {
   const author = a.by === "Community" ? "Requester" : a.by;
   return (
     <div className="cmt">
@@ -192,7 +192,7 @@ function RequestNote({ area: a }: { area: Area }) {
   );
 }
 
-function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
+export function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaComment }) {
   const patch = useStore((s) => s.patch);
   const flyToPoint = useStore((s) => s.flyToPoint);
   const flyToBounds = useStore((s) => s.flyToBounds);
@@ -291,7 +291,7 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
   );
 }
 
-function Compose() {
+export function Compose() {
   const comment = useStore((s) => s.comment);
   const pinMode = useStore((s) => s.pinMode);
   const routeMode = useStore((s) => s.routeMode);
@@ -671,7 +671,7 @@ function ProblemSpot({ area: a }: { area: Area }) {
   );
 }
 
-function Coords({ area: a }: { area: Area }) {
+export function Coords({ area: a }: { area: Area }) {
   const showToast = useStore((s) => s.showToast);
   const [lat, lon] = centerOf(a.shape);
   const text = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
@@ -694,7 +694,7 @@ function Coords({ area: a }: { area: Area }) {
 }
 
 // Released areas: show every street the download smooths, as green lines on the map
-function LinesToggle({ area: a }: { area: Area }) {
+export function LinesToggle({ area: a }: { area: Area }) {
   const km = useStore((s) => s.lineIndex?.[a.id]);
   const on = useStore((s) => s.showLines);
   const loading = useStore((s) => s.linesLoading === a.id);
@@ -782,6 +782,12 @@ export function DetailPanel({ area: a }: { area: Area }) {
           <div className="sub">{[a.region, a.icao].filter(Boolean).join(" · ")}</div>
         </div>
         <div className="head-btns">
+          {CONFIG.database && (
+            <button className="more-btn" title="Open the full page for this area" onClick={() => patch({ full: true })}>
+              <Icon d='<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>' size={13} weight={2.2} />
+              More info
+            </button>
+          )}
           {admin && <AdminMenu area={a} />}
           <button className="ibtn" title="Close" onClick={closePanel}>
             <Icon name="x" size={18} />

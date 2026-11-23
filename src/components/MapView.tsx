@@ -406,11 +406,11 @@ export function MapView() {
     const l = layers.current;
     if (!l || !fly) return;
     const narrow = (el.current!.closest(".device")?.clientWidth ?? 1000) <= 860;
-    const panelOpen = useStore.getState().panel !== null;
+    const panelOpen = useStore.getState().panel !== null && !useStore.getState().full; // the full page has the map to itself
     const sheet = el.current!.clientHeight * 0.66;
-    const pad: L.PointTuple = !panelOpen ? [40, 40] : narrow ? [20, sheet + 20] : [464, 40];
+    const pad: L.PointTuple = useStore.getState().full ? [16, 16] : !panelOpen ? [40, 40] : narrow ? [20, sheet + 20] : [464, 40];
     l.map.flyToBounds(L.latLngBounds(fly.bounds), {
-      paddingTopLeft: [40, 60],
+      paddingTopLeft: useStore.getState().full ? [16, 16] : [40, 60],
       paddingBottomRight: pad,
       maxZoom: fly.maxZoom,
       duration: 0.8,
