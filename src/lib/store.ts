@@ -30,7 +30,8 @@ export type PanelMode = "detail" | "submit" | null;
 export const INTRO_KEY = "sr-request-intro-off";
 // Tips a visitor can dismiss ("x" or "Don't show again"); Help > Show hidden tips brings them back
 export const POI_TIP_KEY = "sr-poi-tip-off";
-const LINES_KEY = "sr-show-lines";
+// "-2": the switch is on by default from 2026-11-23; the new key drops the "off" older visits saved
+const LINES_KEY = "sr-show-lines-2";
 const TIP_KEYS = [POI_TIP_KEY, INTRO_KEY];
 const isOff = (key: string) => {
   try {
@@ -229,7 +230,7 @@ export const useStore = create<Store>((set, get) => {
     visitsOpen: false,
     poiTipOff: isOff(POI_TIP_KEY),
     lineIndex: {},
-    showLines: readJson<boolean>(LINES_KEY, false),
+    showLines: readJson<boolean>(LINES_KEY, true),
     roadLines: {},
     linesLoading: null,
     poiFocus: null,
