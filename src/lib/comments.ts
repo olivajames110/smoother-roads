@@ -154,6 +154,12 @@ export async function setHidden(id: string, hidden: boolean) {
   if (error) throw error;
 }
 
+// Admin only (needs 025_admin_edit_comments.sql): change a comment's text
+export async function editComment(id: string, text: string) {
+  const { error } = await sb.from("area_comments").update({ body: text }).eq("id", id);
+  if (error) throw error;
+}
+
 // The reason only goes with "unable" (other statuses ignore it, so it isn't sent and they work
 // even before 012_unable_reasons.sql has run)
 export async function setStatus(areaId: string, status: Status, reason?: Reason) {

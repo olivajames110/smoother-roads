@@ -929,3 +929,5 @@ tbody tr:hover{background:var(--soft)}
 .loc-route-head .link{font-size:12.5px}
 .stops.improve .stop-pin{background:#16a34a}
 .loc-row .loc-btn + .loc-btn{margin-left:4px}
+.cmt-edit{margin-top:6px}
+.cmt-edit textarea{width:100%;min-height:72px;margin:0 0 8px}

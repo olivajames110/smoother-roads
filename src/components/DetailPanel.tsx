@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ratingOf, setHidden, setNotes, setRegionHidden } from "../lib/comments";
+import { editComment, ratingOf, setHidden, setNotes, setRegionHidden } from "../lib/comments";
 import { CONFIG } from "../lib/config";
 import { ago, fmtDate, fmtN, hue, initials } from "../lib/format";
 import { centerOf, coverage, coverageMi2, coverageShort } from "../lib/geo";
@@ -199,6 +199,16 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
   const admin = useStore((s) => s.admin);
   const adminAction = useStore((s) => s.adminAction);
   const setComment = useStore((s) => s.setComment);
+  // Admin: edit the text in place
+  const [draft, setDraft] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const save = async () => {
+    if (draft === null || !draft.trim() || saving) return;
+    setSaving(true);
+    await adminAction(() => editComment(c.id, draft.trim()), "Comment updated");
+    setSaving(false);
+    setDraft(null);
+  };
   return (
     <div className={"cmt" + (c.hidden ? " off" : "")}>
       <div className="avatar" style={{ background: hue(c.author) }}>
@@ -224,7 +234,28 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
             Replying to <strong>{parent.author}</strong>: {parent.text}
           </div>
         )}
-        {c.text && <p>{c.dev ? withLinks(c.text) : c.text}</p>}
+        {draft !== null ? (
+          <div className="cmt-edit">
+            <textarea
+              autoFocus
+              aria-label="Edit comment"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setDraft(null)}
+            />
+            <div className="compose-row">
+              <button className="btn sm compose-cancel" onClick={() => setDraft(null)}>
+                Cancel
+              </button>
+              <span className="spacer" />
+              <button className="btn cyan sm" disabled={!draft.trim() || draft.trim() === c.text || saving} onClick={save}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          c.text && <p>{c.dev ? withLinks(c.text) : c.text}</p>
+        )}
         {c.image && <img className="cmt-img" src={c.image} alt="Attached screenshot" onClick={() => patch({ lightbox: c.image })} />}
         {c.path ? (
           <button className="link" onClick={() => flyToBounds(c.path!)}>
@@ -243,6 +274,9 @@ function Comment({ comment: c, parent }: { comment: AreaComment; parent?: AreaCo
           <div className="cmt-admin">
             <button className="link" onClick={() => setComment({ replyTo: c.id })}>
               Reply
+            </button>
+            <button className="link" onClick={() => setDraft(c.text)}>
+              Edit
             </button>
             <button
               className="link"
