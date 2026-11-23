@@ -17,7 +17,9 @@ export async function fetchLineIndex(): Promise<Record<string, number>> {
 }
 
 export async function fetchLines(id: string): Promise<LatLng[][]> {
-  const r = await fetch(BASE + encodeURIComponent(id) + ".json");
+  // no-cache: ask the server every time whether the file changed (a release that extends an area showed
+  // the old streets from the browser cache until a hard refresh)
+  const r = await fetch(BASE + encodeURIComponent(id) + ".json", { cache: "no-cache" });
   if (!r.ok) throw new Error("No lines for " + id);
   const { lines } = (await r.json()) as { lines: number[][] };
   return lines.map((l) => {
