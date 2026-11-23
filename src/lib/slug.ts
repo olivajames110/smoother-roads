@@ -15,6 +15,9 @@ const clean = (s: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+// Older short URLs of areas that were renamed keep working: old slug -> area id
+const RENAMED: Record<string, string> = { frederiksberg: "frederiksberg-denmark" };
+
 let cache: { areas: Area[]; byId: Map<string, string> } | null = null;
 
 function slugs(areas: Area[]) {
@@ -41,8 +44,9 @@ export function areaFromPath(areas: Area[]): Area | undefined {
   const key = decodeURIComponent(path.replace(/\/+$/, "")).toLowerCase();
   if (!key) return undefined;
   const byId = slugs(areas);
+  const old = RENAMED[key];
   return (
-    areas.find((a) => a.id.toLowerCase() === key || byId.get(a.id) === key) ??
+    areas.find((a) => a.id.toLowerCase() === key || byId.get(a.id) === key || a.id === old) ??
     areas.find((a) => clean(a.name) === key) // a shared name: the first area with it
   );
 }

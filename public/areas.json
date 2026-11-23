@@ -438,7 +438,7 @@
     },
     {
       "id": "frederiksberg-denmark",
-      "name": "Frederiksberg, Denmark",
+      "name": "Copenhagen, Denmark",
       "region": "Capital Region, Denmark",
       "country": "Denmark",
       "icao": "",
@@ -452,7 +452,7 @@
       "radiusKm": 3.7,
       "added": "2026-11-05",
       "package": "smoother-roads-copenhagen-denmark",
-      "roadKm": 450,
+      "roadKm": 452,
       "version": "0.6.3",
       "perimeter": [
         [55.6448, 12.5851],
