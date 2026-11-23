@@ -39,7 +39,7 @@ export interface AreaPhoto {
 }
 
 // A place to visit (one point) or a route (start and finish) in an area
-export type TimeOfDay = "sunrise" | "noon" | "golden" | "sunset" | "night";
+export type TimeOfDay = "sunrise" | "noon" | "golden" | "sunset" | "twilight" | "night";
 
 export interface AreaPoi {
   id: string;

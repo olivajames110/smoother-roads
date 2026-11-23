@@ -8,6 +8,7 @@ export const TIMES: [TimeOfDay, string][] = [
   ["noon", "Noon"],
   ["golden", "Golden hour"],
   ["sunset", "Sunset"],
+  ["twilight", "Twilight"],
   ["night", "Night"],
 ];
 export const timeLabel = (t: TimeOfDay | null) => TIMES.find(([k]) => k === t)?.[1] ?? ""; // start + 48 stops + finish: what the GPS's route service accepts
