@@ -57,7 +57,7 @@ export function StatusFilter() {
           title={onlyHill ? "Show every kind of area again" : "Show hill climbs only"}
           onClick={() => patch({ onlyHill: !onlyHill })}
         >
-          <Icon d={CATS.hill.icon} size={13} weight={2.2} />
+          <Icon d={CATS.hill.icon} size={14} weight={2.2} />
           Hill climbs
           <span className="c">{hills}</span>
         </button>

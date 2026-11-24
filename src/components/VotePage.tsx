@@ -17,7 +17,7 @@ function Row({ area: a, rank }: { area: Area; rank: number }) {
           {a.name}
           {a.cat === "hill" && (
             <span className="hill-tag" title="Hill climb">
-              <Icon d={CATS.hill.icon} size={13} weight={2.2} />
+              <Icon d={CATS.hill.icon} size={15} weight={2.2} />
             </span>
           )}
         </span>

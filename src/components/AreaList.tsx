@@ -79,7 +79,7 @@ function AreaItem({ area: a }: { area: Area }) {
           <div className="item-title">{a.name}</div>
           {a.cat === "hill" && (
             <HoverTip className="hill-tag" place="right" label="Hill climb" tip="Hill climb: one road smoothed all the way to the summit">
-              <Icon d={CATS.hill.icon} size={13} weight={2.2} />
+              <Icon d={CATS.hill.icon} size={15} weight={2.2} />
             </HoverTip>
           )}
           {a.hidden && (
