@@ -298,10 +298,6 @@ export function VotePage() {
             <p>Cast up to 3 votes a day for a location you want added or improved.</p>
           </div>
           <div className="vp-tally" title="Votes reset at midnight UTC">
-            <div className="vp-mine">
-              <b>{DAILY_VOTES - left}</b>
-              <span>your votes today</span>
-            </div>
             <div className={"vp-mine" + (left === 0 ? " none" : "")}>
               <b>
                 {left} <i>of {DAILY_VOTES}</i>
