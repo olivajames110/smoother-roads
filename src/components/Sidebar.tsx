@@ -15,6 +15,7 @@ export function Sidebar() {
   const beginRequest = useStore((s) => s.beginRequest);
   const collapsed = useStore((s) => s.sidebarCollapsed);
   const patch = useStore((s) => s.patch);
+  const votePage = useStore((s) => s.votePage);
 
   return (
     <aside className="sidebar">
@@ -77,6 +78,18 @@ export function Sidebar() {
                 )}
               </div>
             </div>
+          )}
+          {CONFIG.votes && (
+            <button className={"vote-link" + (votePage ? " on" : "")} onClick={() => patch({ votePage: !votePage, sidebarOpen: false })}>
+              <span className="gl-ico">
+                <Icon name="up" size={15} weight={2.2} />
+              </span>
+              <span className="vl-text">
+                <b>Vote for what's next</b>
+                <span>Requested and in-progress areas, by votes</span>
+              </span>
+              <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
+            </button>
           )}
           <div className="search-add">
             <SearchInput placeholder="Search city, region or country" />

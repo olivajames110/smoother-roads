@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CONFIG } from "../lib/config";
 import { fmtN, norm } from "../lib/format";
-import { STATUS, sideColor, statusLabel, statusNote } from "../lib/icons";
+import { CATS, STATUS, sideColor, statusLabel, statusNote } from "../lib/icons";
 import { SORTS, useStore } from "../lib/store";
 import type { Area, GroupBy, Status } from "../lib/types";
 import { useVisible } from "../lib/useVisible";
@@ -77,6 +77,11 @@ function AreaItem({ area: a }: { area: Area }) {
       <div className="item-main">
         <div className="item-head">
           <div className="item-title">{a.name}</div>
+          {a.cat === "hill" && (
+            <HoverTip className="hill-tag" place="right" label="Hill climb" tip="Hill climb: one road smoothed all the way to the summit">
+              <Icon d={CATS.hill.icon} size={13} weight={2.2} />
+            </HoverTip>
+          )}
           {a.hidden && (
             <span className="hid-tag" title="Hidden from visitors: only you can see it">
               <Icon name="eyeOff" size={12} weight={2.2} />

@@ -1,4 +1,5 @@
 import { circleKm2, polygonKm2, centerOf, shapeFromDraft } from "../lib/geo";
+import { CONFIG } from "../lib/config";
 import { CATS } from "../lib/icons";
 import { coveredBy, useStore } from "../lib/store";
 import type { Cat } from "../lib/types";
@@ -167,7 +168,7 @@ export function SubmitPanel() {
         <div className="field">
           <label className="lbl">Category</label>
           <div className="cat-grid">
-            {(Object.keys(CATS) as Cat[]).map((c) => (
+            {(Object.keys(CATS) as Cat[]).filter((c) => c !== "hill" || CONFIG.hillRequests).map((c) => (
               <button key={c} className={"cat-opt" + (form.cat === c ? " on" : "")} onClick={() => setForm({ cat: c })}>
                 <Icon d={CATS[c].icon} size={18} />
                 {CATS[c].label}

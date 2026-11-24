@@ -1,5 +1,5 @@
 export type LatLng = [number, number];
-export type Cat = "city" | "town" | "airport" | "mountain" | "coastal" | "race" | "island";
+export type Cat = "city" | "town" | "airport" | "mountain" | "coastal" | "race" | "island" | "hill"; // hill: a hill climb (one road to a summit)
 export type Status = "requested" | "progress" | "released" | "unable";
 export type Reason = "alternative" | "no-photogrammetry" | "tried"; // Why an area is "unable"
 export type CommentType = "feedback" | "issue" | "improve" | "question" | "review";

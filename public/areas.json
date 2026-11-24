@@ -693,6 +693,57 @@
         [59.0066, 19.1162]
       ],
       "added": "2026-11-07"
+    },
+    {
+      "id": "pikes-peak-co",
+      "name": "Pikes Peak, CO",
+      "region": "Colorado, United States",
+      "country": "United States",
+      "icao": "",
+      "cat": "hill",
+      "noPhotogrammetry": false,
+      "status": "progress",
+      "votes": 0,
+      "by": "Smoother Roads",
+      "lat": 38.8812,
+      "lon": -105.0498,
+      "radiusKm": 5.2,
+      "roadKm": 21.1,
+      "added": "2026-11-23"
+    },
+    {
+      "id": "mount-washington-nh",
+      "name": "Mount Washington, NH",
+      "region": "New Hampshire, United States",
+      "country": "United States",
+      "icao": "",
+      "cat": "hill",
+      "noPhotogrammetry": false,
+      "status": "progress",
+      "votes": 0,
+      "by": "Smoother Roads",
+      "lat": 44.2797,
+      "lon": -71.264,
+      "radiusKm": 3.4,
+      "roadKm": 12.5,
+      "added": "2026-11-23"
+    },
+    {
+      "id": "mount-vesuvius-italy",
+      "name": "Mount Vesuvius, Italy",
+      "region": "Campania, Italy",
+      "country": "Italy",
+      "icao": "",
+      "cat": "hill",
+      "noPhotogrammetry": false,
+      "status": "progress",
+      "votes": 0,
+      "by": "Smoother Roads",
+      "lat": 40.821,
+      "lon": 14.405,
+      "radiusKm": 4.6,
+      "roadKm": 11.8,
+      "added": "2026-11-23"
     }
   ]
 }

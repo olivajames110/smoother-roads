@@ -121,6 +121,8 @@ interface Store {
   selectedId: string | null;
   hoveredId: string | null;
   panel: PanelMode;
+  votePage: boolean; // The "Vote" page over the map area: requested and in-progress areas by votes
+  onlyHill: boolean; // The "Hill climbs" chip: list and map show hill climbs only
   full: boolean; // "More info": the open area as a full page over the map area, the map beside it
   draft: Draft;
   form: SubmitForm;
@@ -252,6 +254,8 @@ export const useStore = create<Store>((set, get) => {
     hoveredId: null,
     panel: null,
     full: false,
+    votePage: false,
+    onlyHill: false,
     draft: newDraft(),
     form: newForm(),
     placeQuery: "",
@@ -395,6 +399,7 @@ export const useStore = create<Store>((set, get) => {
       if (!area) return;
       set({
         view: "map",
+        votePage: false,
         panel: "detail",
         selectedId: id,
         pinMode: false,
@@ -597,6 +602,7 @@ export const useStore = create<Store>((set, get) => {
     openSubmit: () =>
       set({
         view: "map",
+        votePage: false,
         panel: "submit",
         full: false,
         selectedId: null,

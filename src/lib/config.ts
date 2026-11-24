@@ -3,6 +3,9 @@ export const CONFIG = {
   votes: true,
   // The Map/Leaderboard switch and the leaderboard page
   leaderboard: false,
+  // "Hill Climbs" as a category in the request form: turn on once supabase/026_hill_climbs.sql has run
+  // (until then the database refuses a request with that category)
+  hillRequests: false,
   // Comments and feedback
   database: true,
   // Screenshot uploads on comments: turn on once approval is built

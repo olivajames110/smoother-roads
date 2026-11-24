@@ -11,14 +11,16 @@ export function useVisible(useLegend: boolean) {
   const query = useStore((s) => s.query);
   const showHidden = useStore((s) => s.showHidden);
   const selectedId = useStore((s) => s.selectedId);
+  const onlyHill = useStore((s) => s.onlyHill);
   return useMemo(
     () =>
       areas.filter(
         (a) =>
           (!a.hidden || showHidden || a.id === selectedId) &&
           (!useLegend || !hidden.has(filterKey(a))) &&
+          (!useLegend || !onlyHill || a.cat === "hill" || a.id === selectedId) &&
           matches(a, query),
       ),
-    [areas, hidden, query, useLegend, showHidden, selectedId],
+    [areas, hidden, query, useLegend, showHidden, selectedId, onlyHill],
   );
 }

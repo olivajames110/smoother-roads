@@ -51,6 +51,19 @@ export function areaFromPath(areas: Area[]): Area | undefined {
   );
 }
 
+// The Vote page has its own address: /smoother-roads/vote
+export const VOTE_PATH = "vote";
+export const isVotePath = () =>
+  location.pathname.startsWith(BASE) && location.pathname.slice(BASE.length).replace(/\/+$/, "").toLowerCase() === VOTE_PATH;
+
+// Point the address bar at the Vote page, or back at the home page
+export function syncVote(on: boolean, push: boolean) {
+  const url = BASE + (on ? VOTE_PATH : "") + location.search + location.hash;
+  if (url === location.pathname + location.search + location.hash) return;
+  if (push) history.pushState(null, "", url);
+  else history.replaceState(null, "", url);
+}
+
 // Point the address bar at the open area (or the home page), keeping the query (?demo, ?area)
 export function syncPath(area: Area | undefined, areas: Area[], push: boolean) {
   const path = BASE + (area ? areaSlug(area, areas) : "");

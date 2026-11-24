@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { REASONS, STATUS, filterKey, type FilterKey } from "../lib/icons";
+import { CATS, REASONS, STATUS, filterKey, type FilterKey } from "../lib/icons";
+import { Icon } from "./Icon";
 import { matches, useStore } from "../lib/store";
 
 // The chips above the list: click one to show or hide those areas (list and map).
@@ -20,6 +21,9 @@ export function StatusFilter() {
   const query = useStore((s) => s.query);
   const hidden = useStore((s) => s.hidden);
   const toggleStatus = useStore((s) => s.toggleStatus);
+  const onlyHill = useStore((s) => s.onlyHill);
+  const patch = useStore((s) => s.patch);
+  const hills = useMemo(() => areas.filter((a) => a.cat === "hill" && matches(a, query)).length, [areas, query]);
 
   const counts = useMemo(() => {
     const c: Partial<Record<FilterKey, number>> = {};
@@ -45,6 +49,19 @@ export function StatusFilter() {
           <span className="c">{counts[c.key] ?? 0}</span>
         </button>
       ))}
+      {/* Hill climbs: a type, not a status. On = only hill climbs (within the statuses switched on) */}
+      {(hills > 0 || onlyHill) && (
+        <button
+          className={"lg-btn hill-chip" + (onlyHill ? " on" : "")}
+          aria-pressed={onlyHill}
+          title={onlyHill ? "Show every kind of area again" : "Show hill climbs only"}
+          onClick={() => patch({ onlyHill: !onlyHill })}
+        >
+          <Icon d={CATS.hill.icon} size={13} weight={2.2} />
+          Hill climbs
+          <span className="c">{hills}</span>
+        </button>
+      )}
     </div>
   );
 }

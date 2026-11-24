@@ -24,6 +24,9 @@ function areaPages(): Plugin {
       const dist = "dist";
       const index = join(dist, "index.html");
       copyFileSync(index, join(dist, "404.html"));
+      // the Vote page: /smoother-roads/vote
+      mkdirSync(join(dist, "vote"), { recursive: true });
+      copyFileSync(index, join(dist, "vote", "index.html"));
       const { areas } = JSON.parse(readFileSync("public/areas.json", "utf8")) as { areas: { id: string; name: string }[] };
       const count = new Map<string, number>();
       for (const a of areas) count.set(clean(a.name), (count.get(clean(a.name)) ?? 0) + 1);

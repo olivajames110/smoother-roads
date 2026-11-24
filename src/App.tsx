@@ -12,8 +12,9 @@ import { Panel } from "./components/Panel";
 import { RequestIntro } from "./components/RequestIntro";
 import { WhatsNew } from "./components/WhatsNew";
 import { Visitors } from "./components/Visitors";
+import { VotePage } from "./components/VotePage";
 import { Sidebar } from "./components/Sidebar";
-import { areaFromPath, syncPath } from "./lib/slug";
+import { areaFromPath, isVotePath, syncPath, syncVote } from "./lib/slug";
 import { useStore } from "./lib/store";
 
 export function App() {
@@ -26,6 +27,7 @@ export function App() {
   const adminAction = useStore((s) => s.adminAction);
   // "More info": the open area as a full page over the map area
   const full = useStore((s) => s.full && s.panel === "detail" && !!s.selectedId);
+  const votePage = useStore((s) => s.votePage);
 
   useEffect(() => {
     const { init } = useStore.getState();
@@ -38,7 +40,8 @@ export function App() {
       init().then(() => {
         const { areas, openDetail } = useStore.getState();
         const area = areaFromPath(areas) ?? areas.find((a) => a.id === id);
-        if (area) openDetail(area.id);
+        if (isVotePath()) useStore.getState().patch({ votePage: true }); // /smoother-roads/vote
+        else if (area) openDetail(area.id);
         else syncPath(undefined, areas, false);
       });
     }
@@ -47,12 +50,18 @@ export function App() {
   // The address bar follows the open area; Back / Forward open or close areas
   useEffect(() => {
     const unsub = useStore.subscribe((s, prev) => {
-      if (!s.areas.length || s.selectedId === prev.selectedId) return;
+      if (!s.areas.length) return;
+      // the Vote page has its own address; leaving it for an area goes to that area's address
+      if (s.votePage !== prev.votePage && (s.votePage || !s.selectedId)) syncVote(s.votePage, true);
+      if (s.votePage || (s.selectedId === prev.selectedId && s.votePage === prev.votePage)) return;
+      if (s.votePage !== prev.votePage && !s.selectedId) return;
       syncPath(s.areas.find((a) => a.id === s.selectedId), s.areas, true);
     });
     const onPop = () => {
       const s = useStore.getState();
       const area = areaFromPath(s.areas);
+      if (isVotePath() !== s.votePage) s.patch({ votePage: isVotePath() });
+      if (isVotePath()) return;
       if (area && area.id !== s.selectedId) s.openDetail(area.id);
       else if (!area && s.selectedId) s.closePanel();
     };
@@ -71,6 +80,7 @@ export function App() {
       else if (s.pinMode) s.patch({ pinMode: false });
       else if (s.routeMode) s.patch({ routeMode: false });
       else if (s.poiPick) s.patch({ poiPick: false });
+      else if (s.votePage) s.patch({ votePage: false });
       else if (s.full && s.panel === "detail") s.patch({ full: false });
       else if (s.panel) s.closePanel();
     };
@@ -88,6 +98,7 @@ export function App() {
             <div className={"map-wrap" + (full ? " full" : "")}>
               <MapView />
               {full && <AreaPage />}
+              {votePage && <VotePage />}
               <Legend />
               <Panel />
               <MapHint />

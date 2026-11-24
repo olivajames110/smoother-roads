@@ -17,6 +17,8 @@ export const CATS = {
   mountain:{label:'Mountain Passes', icon:'<path d="m3 20 6-11 4 6 3-4 5 9z"/>'},
   coastal:{label:'Coastal Roads', icon:'<path d="M2 12c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M12 3v4"/>'},
   race:{label:'Race Tracks', icon:'<path d="M4 22V4M4 4h14l-3 4 3 4H4"/>'},
+  // Hill climbs: one road smoothed all the way up a mountain, from the race start line to the summit
+  hill:{label:'Hill Climbs', icon:'<path d="m2 20 7-12 4 6 2-3 7 9z"/><path d="M9 8V3l4 1.5L9 6"/>'},
   island:{label:'Islands', icon:'<path d="M12 22V11M12 11c-2-3-6-3-8-1M12 11c2-3 6-3 8-1M12 11c-1-3-4-5-7-5M12 11c1-3 4-5 7-5M6 22h12"/>'},
 };
 export const STATUS = {

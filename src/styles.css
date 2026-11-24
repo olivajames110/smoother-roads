@@ -1006,3 +1006,54 @@ tbody tr:hover{background:var(--soft)}
   .ap-head h1{font-size:24px}
   .ap-hero{height:200px}
 }
+
+/* Hill climbs: the small hill next to the name, and the "Hill climbs" chip beside the status chips */
+.hill-tag{display:inline-flex;flex:none;align-items:center;color:#0f766e}
+.status-filter .hill-chip svg{color:#0f766e}
+.status-filter .hill-chip.on{background:#ccfbf1;border-color:#5eead4;color:#115e59}
+.status-filter .hill-chip.on .c{color:#115e59}
+
+/* The Vote page: covers the map area. Left the requested areas, right the ones in progress, both by votes */
+.vote-link{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px 8px 6px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--tx);text-align:left;transition:border-color .15s,background .15s}
+.vote-link:hover,.vote-link.on{border-color:var(--accent-line);background:var(--accent-soft)}
+.vote-link .gl-ico{flex:none}
+.vote-link>svg{color:var(--faint)}
+.vl-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.vl-text b{font-size:13px;font-weight:600}
+.vl-text span{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vote-page{position:absolute;inset:0;z-index:1300;overflow-y:auto;background:var(--bg);--ap-bar:54px}
+.vote-page .ap-bar .grow{flex:1}
+.vp-content{max-width:1080px;margin:0 auto;padding:22px 22px 48px}
+.vp-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:16px}
+.vp-head .grow{flex:1;min-width:0}
+.vp-head h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.vp-head p{margin:6px 0 0;max-width:560px;color:var(--mut);font-size:13.5px;line-height:1.5}
+.vp-mine{flex:none;display:flex;flex-direction:column;align-items:center;min-width:92px;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.vp-mine b{font-size:20px;font-variant-numeric:tabular-nums}
+.vp-mine span{font-size:12px;color:var(--mut)}
+.vp-search{margin-bottom:16px;max-width:420px}
+.vp-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.vp-col{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);min-width:0}
+.vp-col-h{display:flex;align-items:center;gap:8px}
+.vp-col-h h2{margin:0;font-size:16px;font-weight:700}
+.vp-n{padding:1px 8px;border-radius:999px;background:var(--soft);color:var(--mut);font-size:12px;font-weight:600}
+.vp-hint{margin:6px 0 12px;color:var(--mut);font-size:12.5px;line-height:1.45}
+.vp-list{display:flex;flex-direction:column;gap:6px}
+.vp-row{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--surface);transition:border-color .15s,background .15s}
+.vp-row:hover{background:var(--soft)}
+.vp-row.on{border-color:var(--accent-line);background:var(--accent-soft)}
+.vp-rank{flex:none;width:24px;text-align:center;color:var(--faint);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.vp-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;padding:0;border:0;background:transparent;color:var(--tx);text-align:left}
+.vp-name{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vp-main:hover .vp-name{color:var(--accent-h)}
+.vp-sub{font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vp-vote{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:62px;height:36px;padding:0 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--mut);font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;transition:background .15s,border-color .15s,color .15s}
+.vp-vote:hover{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-h)}
+.vp-vote.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.vp-vote.on svg{fill:currentColor}
+@container app (max-width: 1100px){ .vp-cols{grid-template-columns:1fr} }
+@container app (max-width: 860px){
+  .vp-content{padding:16px 12px 40px}
+  .vp-head h1{font-size:23px}
+  .vp-mine{display:none}
+}
