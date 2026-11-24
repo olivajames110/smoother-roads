@@ -6,6 +6,9 @@ export const CONFIG = {
   // "Hill Climbs" as a category in the request form: turn on once supabase/026_hill_climbs.sql has run
   // (until then the database refuses a request with that category)
   hillRequests: true,
+  // The Vote page: the day voting ends, as "2026-12-31" (the last day votes count, UTC), or "" while no
+  // date is set. The page shows it either way; after that day the vote buttons are switched off.
+  voteEnds: "",
   // Comments and feedback
   database: true,
   // Screenshot uploads on comments: turn on once approval is built
