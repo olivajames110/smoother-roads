@@ -1073,8 +1073,13 @@ tbody tr:hover{background:var(--soft)}
 .vp-mine b i{font-style:normal;font-weight:500;font-size:13px;color:var(--mut)}
 .vp-mine.none b{color:var(--faint)}
 .vp-tally{flex:none;display:flex;gap:8px;align-items:stretch}
-.vp-tally .vp-mine{justify-content:center;min-width:128px}
-@container app (max-width: 860px){ .vp-tally .vp-mine{min-width:0} .vp-tally .vp-ends{justify-content:space-between} }
+.vp-tally .vp-mine{justify-content:center;min-width:168px;padding:12px 20px}
+.vp-tally .vp-mine b{font-size:27px;min-height:34px}
+.vp-tally .vp-mine b i{font-size:15px;font-style:normal;font-weight:600;color:var(--mut)}
+.vp-tally .vp-mine span{font-size:13.5px}
+.vp-tally .vp-ends.tba b{font-size:18px}
+.vp-tally .vp-ends b{font-size:20px}
+@container app (max-width: 860px){ .vp-tally .vp-mine{min-width:0;padding:9px 14px} .vp-tally .vp-mine b{font-size:20px;min-height:26px} .vp-tally .vp-mine span{font-size:12px} .vp-tally .vp-ends b,.vp-tally .vp-ends.tba b{font-size:15px} .vp-tally .vp-ends{justify-content:space-between} }
 
 /* A location's card over the Vote page */
 .vp-modal{max-width:640px;max-height:calc(100dvh - 32px);overflow-y:auto}
