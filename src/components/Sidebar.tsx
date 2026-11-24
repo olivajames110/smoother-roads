@@ -86,7 +86,7 @@ export function Sidebar() {
               </span>
               <span className="vl-text">
                 <b>Vote for what's next</b>
-                <span>Requested and in-progress areas, by votes</span>
+                <span>3 votes a day: add or improve a location</span>
               </span>
               <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
             </button>
