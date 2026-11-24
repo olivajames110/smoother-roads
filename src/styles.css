@@ -1057,3 +1057,6 @@ tbody tr:hover{background:var(--soft)}
   .vp-head h1{font-size:23px}
   .vp-mine{display:none}
 }
+
+.vp-closed{margin-bottom:14px;padding:10px 12px;border-radius:10px;background:#fef3e2;color:#92400e;font-size:13px;font-weight:600}
+.vp-vote:disabled{opacity:.5;cursor:not-allowed}

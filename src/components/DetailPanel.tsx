@@ -783,9 +783,8 @@ export function DetailPanel({ area: a }: { area: Area }) {
         </div>
         <div className="head-btns">
           {CONFIG.database && (
-            <button className="more-btn" title="Open the full page for this area" onClick={() => patch({ full: true })}>
-              <Icon d='<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>' size={13} weight={2.2} />
-              More info
+            <button className="ibtn" title="More info: open the full page for this area" aria-label="More info" onClick={() => patch({ full: true })}>
+              <Icon d='<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>' size={17} />
             </button>
           )}
           {admin && <AdminMenu area={a} />}

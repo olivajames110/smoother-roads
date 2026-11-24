@@ -9,7 +9,7 @@ const CHIPS: { key: FilterKey; label: string; color: string; color2?: string; al
   { key: "requested", label: STATUS.requested.label, color: STATUS.requested.color, always: true },
   { key: "progress", label: STATUS.progress.label, color: STATUS.progress.color, always: true },
   { key: "released", label: STATUS.released.label, color: STATUS.released.color, always: true },
-  { key: "unable:no-photogrammetry", label: "Unable – Photogramm.", color: STATUS.unable.color,
+  { key: "unable:no-photogrammetry", label: "No Photogramm.", color: STATUS.unable.color,
     color2: REASONS["no-photogrammetry"].color, always: true },
   { key: "unable:alternative", label: "Alternative", color: STATUS.unable.color,
     color2: REASONS.alternative.color, always: true },
@@ -33,7 +33,8 @@ export function StatusFilter() {
 
   return (
     <div className="status-filter" role="group" aria-label="Show statuses">
-      {CHIPS.filter((c) => c.always || counts[c.key]).map((c) => (
+      {/* a status with no areas has no chip (unless it's switched off: then it stays, to switch back on) */}
+      {CHIPS.filter((c) => counts[c.key] || hidden.has(c.key)).map((c) => (
         <button
           key={c.key}
           className={"lg-btn" + (hidden.has(c.key) ? " off" : "")}
