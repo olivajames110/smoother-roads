@@ -13,7 +13,7 @@ import { RequestIntro } from "./components/RequestIntro";
 import { WhatsNew } from "./components/WhatsNew";
 import { Visitors } from "./components/Visitors";
 import { VotePage } from "./components/VotePage";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, VoteLink } from "./components/Sidebar";
 import { areaFromPath, isVotePath, syncPath, syncVote } from "./lib/slug";
 import { useStore } from "./lib/store";
 
@@ -100,6 +100,7 @@ export function App() {
               {full && <AreaPage />}
               {votePage && <VotePage />}
               <Legend />
+              {CONFIG.votes && <VoteLink float />}
               <Panel />
               <MapHint />
               <button className="fab fab-menu" title="Open list" onClick={() => patch({ sidebarOpen: true })}>

@@ -1095,3 +1095,14 @@ tbody tr:hover{background:var(--soft)}
 .mini-map{width:calc(100% + 52px);height:300px;margin:-26px -26px 16px;border-radius:18px 18px 0 0;overflow:hidden;background:#eceef1;z-index:0}
 .badge.no-pg-b{color:#a16207;background:#fef9c3}
 .badge.no-pg-b::before{display:none}
+
+/* The vote button floats on the map under the road coverage card; on narrow screens it sits in the sidebar */
+.sidebar .vote-link{display:none}
+.vote-float{position:absolute;left:14px;top:66px;z-index:1000;width:auto;max-width:calc(100% - 28px);background:linear-gradient(100deg,var(--accent-soft),var(--surface) 85%),var(--surface);box-shadow:var(--shadow)}
+.vote-float:hover,.vote-float.on{box-shadow:var(--shadow-lg)}
+.map-wrap.full>.vote-float{display:none}
+@container app (max-width: 1100px){ .vote-float{top:14px} }
+@container app (max-width: 860px){
+  .vote-float{display:none}
+  .sidebar .vote-link{display:flex}
+}

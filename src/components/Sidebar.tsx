@@ -8,6 +8,28 @@ import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
 import { SearchInput } from "./SearchInput";
 
+// Opens the Vote page. Floats on the map under the road coverage card (wide screens), and sits in the
+// sidebar on narrow ones
+export function VoteLink({ float }: { float?: boolean }) {
+  const votePage = useStore((s) => s.votePage);
+  const patch = useStore((s) => s.patch);
+  return (
+    <button
+      className={"vote-link" + (float ? " vote-float" : "") + (votePage ? " on" : "")}
+      onClick={() => patch({ votePage: !votePage, sidebarOpen: false })}
+    >
+      <span className="gl-ico">
+        <Icon name="up" size={15} weight={2.2} />
+      </span>
+      <span className="vl-text">
+        <b>Vote for what's next</b>
+        <span>3 votes a day. Tell me what to work on.</span>
+      </span>
+      <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
+    </button>
+  );
+}
+
 export function Sidebar() {
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);
@@ -15,7 +37,6 @@ export function Sidebar() {
   const beginRequest = useStore((s) => s.beginRequest);
   const collapsed = useStore((s) => s.sidebarCollapsed);
   const patch = useStore((s) => s.patch);
-  const votePage = useStore((s) => s.votePage);
 
   return (
     <aside className="sidebar">
@@ -79,18 +100,8 @@ export function Sidebar() {
               </div>
             </div>
           )}
-          {CONFIG.votes && (
-            <button className={"vote-link" + (votePage ? " on" : "")} onClick={() => patch({ votePage: !votePage, sidebarOpen: false })}>
-              <span className="gl-ico">
-                <Icon name="up" size={15} weight={2.2} />
-              </span>
-              <span className="vl-text">
-                <b>Vote for what's next</b>
-                <span>3 votes a day. Tell me what to work on.</span>
-              </span>
-              <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
-            </button>
-          )}
+          {/* narrow screens only: on wide ones the button floats on the map (App.tsx) */}
+          {CONFIG.votes && <VoteLink />}
           <div className="search-add">
             <SearchInput placeholder="Search city, region or country" />
             <HoverTip className="ibtn-tip" tip="Request an area (or right-click the map)" place="below">
