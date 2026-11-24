@@ -99,8 +99,11 @@ export function App() {
               <MapView />
               {full && <AreaPage />}
               {votePage && <VotePage />}
-              <Legend />
-              {CONFIG.votes && <VoteLink float />}
+              {/* top left of the map: the road coverage card, and the vote button under it at the same width */}
+              <div className="map-tl">
+                <Legend />
+                {CONFIG.votes && <VoteLink float />}
+              </div>
               <Panel />
               <MapHint />
               <button className="fab fab-menu" title="Open list" onClick={() => patch({ sidebarOpen: true })}>
