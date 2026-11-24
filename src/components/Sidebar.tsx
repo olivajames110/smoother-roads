@@ -23,7 +23,7 @@ export function VoteLink({ float }: { float?: boolean }) {
       </span>
       <span className="vl-text">
         <b>Vote for what's next</b>
-        <span>Cast 3 votes each day to let me know what to work on.</span>
+        <span>Cast 3 votes each day for what you want worked on.</span>
       </span>
       <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
     </button>
