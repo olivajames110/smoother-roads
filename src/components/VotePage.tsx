@@ -229,6 +229,7 @@ export function VotePage() {
     };
   }, []);
 
+  const loaded = useStore((s) => s.loaded);
   const left = Math.max(0, DAILY_VOTES - (data?.today.size ?? 0));
   const end = voteEnd();
   const votes: Votes = {
@@ -296,6 +297,16 @@ export function VotePage() {
           <div className="grow">
             <h1>Vote for what's next</h1>
             <p>Cast up to 3 votes a day for a location you want added or improved.</p>
+            <div className="search vp-search">
+              <Icon name="search" size={15} />
+              <input
+                className="input"
+                placeholder="Search city, region or country"
+                aria-label="Search the locations"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
           </div>
           <div className="vp-tally" title="Votes reset at midnight UTC">
             <div className={"vp-mine" + (left === 0 ? " none" : "")}>
@@ -317,20 +328,16 @@ export function VotePage() {
 
         {data && !data.ready && <div className="vp-closed">Voting isn't open yet. Check back soon.</div>}
 
-        <div className="search vp-search">
-          <Icon name="search" size={15} />
-          <input
-            className="input"
-            placeholder="Search city, region or country"
-            aria-label="Search the locations"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-
         {shown && <AreaModal area={shown} votes={votes} close={() => setShownId(null)} />}
 
-        <div className="vp-cols">
+        {/* a direct visit to /vote shows this page at once: a loader until the locations and votes are in */}
+        {(!loaded || !data) && (
+          <div className="vp-loading" role="status">
+            <span className="vp-spin" />
+            Loading locations…
+          </div>
+        )}
+        <div className={"vp-cols" + (!loaded || !data ? " hide" : "")}>
           {COLUMNS.map((c, i) => (
             <Column key={c.status} status={c.status} title={c.title} areas={lists[i]} votes={votes} />
           ))}

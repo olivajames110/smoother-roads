@@ -4,6 +4,7 @@ import { addComment, amAdmin, editReview, fetchMyReviews } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
 import { fetchLineIndex, fetchLines } from "./lines";
 import { logVisit } from "./visits";
+import { isVotePath } from "./slug";
 import { reorderPhotos, uploadPhoto } from "./photos";
 import { addRequest } from "./requests";
 import { setVote } from "./votes";
@@ -254,7 +255,7 @@ export const useStore = create<Store>((set, get) => {
     hoveredId: null,
     panel: null,
     full: false,
-    votePage: false,
+    votePage: isVotePath(), // a direct visit to /vote opens the vote page at once (no flash of the map)
     onlyHill: false,
     draft: newDraft(),
     form: newForm(),

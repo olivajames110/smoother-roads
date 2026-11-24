@@ -1026,14 +1026,18 @@ tbody tr:hover{background:var(--soft)}
 .vote-page{position:absolute;inset:0;z-index:1300;overflow-y:auto;background:var(--bg);--ap-bar:54px}
 .vote-page .ap-bar .grow{flex:1}
 .vp-content{max-width:1500px;margin:0 auto;padding:22px 22px 48px}
-.vp-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:16px}
+.vp-head{display:flex;align-items:stretch;gap:18px;margin-bottom:16px}
 .vp-head .grow{flex:1;min-width:0}
 .vp-head h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
 .vp-head p{margin:6px 0 0;color:var(--mut);font-size:13.5px;line-height:1.5}
 .vp-mine{flex:none;display:flex;flex-direction:column;align-items:center;min-width:92px;padding:9px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 .vp-mine b{font-size:20px;font-variant-numeric:tabular-nums}
 .vp-mine span{font-size:12px;color:var(--mut)}
-.vp-search{margin-bottom:16px;max-width:420px}
+.vp-search{margin-top:14px;max-width:420px}
+.vp-cols.hide{display:none}
+.vp-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:70px 0;color:var(--mut);font-size:14px}
+.vp-spin{width:18px;height:18px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:vp-spin .8s linear infinite}
+@keyframes vp-spin{to{transform:rotate(360deg)}}
 .vp-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
 .vp-col{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);min-width:0}
 .vp-col-h{display:flex;align-items:center;gap:8px}
@@ -1068,7 +1072,9 @@ tbody tr:hover{background:var(--soft)}
 .vp-vote:disabled{opacity:.5;cursor:not-allowed}
 .vp-mine b i{font-style:normal;font-weight:500;font-size:13px;color:var(--mut)}
 .vp-mine.none b{color:var(--faint)}
-.vp-tally{flex:none;display:flex;gap:8px}
+.vp-tally{flex:none;display:flex;gap:8px;align-items:stretch}
+.vp-tally .vp-mine{justify-content:center;min-width:128px}
+@container app (max-width: 860px){ .vp-tally .vp-mine{min-width:0} .vp-tally .vp-ends{justify-content:space-between} }
 
 /* A location's card over the Vote page */
 .vp-modal{max-width:640px;max-height:calc(100dvh - 32px);overflow-y:auto}
