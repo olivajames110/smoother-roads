@@ -1069,9 +1069,9 @@ tbody tr:hover{background:var(--soft)}
 .vp-tally{flex:none;display:flex;gap:8px}
 
 /* A location's card over the Vote page */
-.vp-modal{max-width:520px;max-height:calc(100dvh - 32px);overflow-y:auto}
+.vp-modal{max-width:640px;max-height:calc(100dvh - 32px);overflow-y:auto}
 .vp-modal-img{display:block;width:calc(100% + 52px);max-width:none;height:190px;margin:-26px -26px 16px;object-fit:cover;border-radius:18px 18px 0 0}
-.vp-modal:has(.vp-modal-img) .modal-x{background:rgba(255,255,255,.9)}
+.vp-modal .modal-x{z-index:1001;right:auto;left:12px;background:var(--surface);box-shadow:var(--shadow)}
 .vp-modal-sub{margin:-2px 0 14px;color:var(--mut);font-size:13px}
 .vp-modal-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-bottom:14px}
 .vp-modal-stats .stat .v{font-size:16px;white-space:nowrap}
@@ -1088,3 +1088,8 @@ tbody tr:hover{background:var(--soft)}
 .vp-ends.tba b{font-size:15px}
 .vp-ends.over{border-color:#f5c2c0;background:#fdecec}
 .vp-ends.over b,.vp-ends.over span{color:#b42318}
+
+/* The map in a location's card */
+.mini-map{width:calc(100% + 52px);height:300px;margin:-26px -26px 16px;border-radius:18px 18px 0 0;overflow:hidden;background:#eceef1;z-index:0}
+.badge.no-pg-b{color:#a16207;background:#fef9c3}
+.badge.no-pg-b::before{display:none}

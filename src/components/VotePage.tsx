@@ -10,6 +10,7 @@ import type { Area, Status } from "../lib/types";
 import { DAILY_VOTES, fetchWorkVotes, setWorkVote, type WorkVotes } from "../lib/workVotes";
 import { Icon } from "./Icon";
 import { formatNotes } from "./LinkedText";
+import { MiniMap } from "./MiniMap";
 
 interface Votes {
   of: (id: string) => number;
@@ -84,7 +85,6 @@ function AreaModal({ area: a, votes, close }: { area: Area; votes: Votes; close:
   }, [close]);
 
   const status = STATUS[a.status];
-  const photo = (a.photos ?? []).find((p) => p.approved);
   const roadKm = a.roadKm ?? packKm ?? null;
   const pois = (a.pois ?? []).filter((p) => p.approved);
   const places = pois.filter((p) => p.kind === "place").length;
@@ -111,12 +111,18 @@ function AreaModal({ area: a, votes, close }: { area: Area; votes: Votes; close:
         <button className="ibtn modal-x" title="Close" onClick={close}>
           <Icon name="x" size={17} />
         </button>
-        {photo && <img className="vp-modal-img" src={photo.url} alt={`Photo by ${photo.author}`} />}
+        <MiniMap area={a} />
         <div className="eyebrow">
           <span className="badge" style={{ background: status.tint, color: status.ink }}>
             {statusLabel(a)}
           </span>
           <span className="badge cat-b">{CATS[a.cat].label}</span>
+          {a.noPhotogrammetry && (
+            <span className="badge no-pg-b" title="Not a photogrammetry zone: final results may not be very noticeable">
+              <Icon name="alert" size={12} weight={2.2} />
+              No photogrammetry
+            </span>
+          )}
         </div>
         <h2 id="vp-modal-t">{a.name}</h2>
         <p className="vp-modal-sub">
@@ -160,8 +166,13 @@ function Row({ area: a, rank, votes }: { area: Area; rank: number; votes: Votes 
               <Icon d={CATS.hill.icon} size={15} weight={2.2} />
             </span>
           )}
+          {a.noPhotogrammetry && (
+            <span className="no-pg" title="Not a photogrammetry zone: final results may not be very noticeable">
+              <Icon name="alert" size={13} />
+            </span>
+          )}
         </span>
-        <span className="vp-sub">{a.region}</span>
+        <span className="vp-sub">{a.noPhotogrammetry ? `${a.region} · No photogrammetry` : a.region}</span>
       </button>
       <VoteButton area={a} votes={votes} />
     </div>
