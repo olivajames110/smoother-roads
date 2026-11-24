@@ -22,11 +22,16 @@ interface Votes {
 
 // When voting ends (CONFIG.voteEnds): the text shown on the page, and whether that day has passed
 function voteEnd() {
-  if (!CONFIG.voteEnds) return { text: "No end date set yet", over: false, set: false };
+  if (!CONFIG.voteEnds) return { day: "To be announced", full: "No end date has been set yet", over: false, set: false };
   const last = new Date(CONFIG.voteEnds + "T23:59:59Z");
-  const day = last.toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const fmt = (o: Intl.DateTimeFormatOptions) => last.toLocaleDateString(undefined, { ...o, timeZone: "UTC" });
   const over = Date.now() > last.getTime();
-  return { text: over ? `Voting ended ${day}` : `Voting ends ${day}`, over, set: true };
+  return {
+    day: fmt({ month: "short", day: "numeric" }),
+    full: (over ? "Voting ended " : "Voting ends ") + fmt({ month: "long", day: "numeric", year: "numeric" }) + " (UTC)",
+    over,
+    set: true,
+  };
 }
 
 // The three columns: what a vote there means
@@ -280,10 +285,6 @@ export function VotePage() {
           <div className="grow">
             <h1>Vote for what's next</h1>
             <p>Cast up to 3 votes a day for a location you want added or improved.</p>
-            <div className={"vp-ends" + (end.over ? " over" : end.set ? " set" : "")}>
-              <Icon d='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>' size={13} weight={2.2} />
-              {end.set ? end.text : <>Voting ends: <b>{end.text}</b></>}
-            </div>
           </div>
           <div className="vp-tally" title="Votes reset at midnight UTC">
             <div className="vp-mine">
@@ -295,6 +296,14 @@ export function VotePage() {
                 {left} <i>of {DAILY_VOTES}</i>
               </b>
               <span>votes left today</span>
+            </div>
+            {/* when voting ends: its own card beside the counters */}
+            <div className={"vp-mine vp-ends" + (end.over ? " over" : end.set ? "" : " tba")} title={end.full}>
+              <b>
+                <Icon d='<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>' size={15} weight={2.2} />
+                {end.day}
+              </b>
+              <span>{end.over ? "voting ended" : "voting ends"}</span>
             </div>
           </div>
         </header>

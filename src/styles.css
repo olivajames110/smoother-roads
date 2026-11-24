@@ -1057,7 +1057,8 @@ tbody tr:hover{background:var(--soft)}
   .vp-content{padding:16px 12px 40px}
   .vp-head h1{font-size:23px}
   .vp-head{flex-wrap:wrap}
-  .vp-tally{width:100%}
+  .vp-tally{width:100%;flex-wrap:wrap}
+  .vp-tally .vp-ends{flex:1 1 100%;flex-direction:row;align-items:center;justify-content:space-between}
   .vp-mine{flex:1}
 }
 
@@ -1079,8 +1080,11 @@ tbody tr:hover{background:var(--soft)}
 .vp-vote.wide{min-width:0;padding:0 14px}
 .vp-vote.wide span{font-weight:600}
 
-/* When voting ends: under the Vote page's one-line intro */
-.vp-ends{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:4px 10px;border-radius:999px;background:var(--soft);color:var(--mut);font-size:12.5px;font-weight:500}
-.vp-ends b{font-weight:600;color:var(--tx)}
-.vp-ends.set{background:var(--accent-soft);color:var(--accent-h);font-weight:600}
-.vp-ends.over{background:#fdecec;color:#b42318;font-weight:600}
+/* When voting ends: a card beside the two vote counters */
+.vp-mine b{display:flex;align-items:center;gap:6px;min-height:26px;white-space:nowrap}
+.vp-ends{align-items:flex-start;border-color:var(--accent-line);background:var(--accent-soft)}
+.vp-ends b{color:var(--accent-h)}
+.vp-ends span{color:var(--accent-h);opacity:.85}
+.vp-ends.tba b{font-size:15px}
+.vp-ends.over{border-color:#f5c2c0;background:#fdecec}
+.vp-ends.over b,.vp-ends.over span{color:#b42318}
