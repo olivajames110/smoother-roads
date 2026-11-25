@@ -1,6 +1,6 @@
 {
-  "updated": "2026-11-23",
-  "modVersion": "0.6.3",
+  "updated": "2026-11-24",
+  "modVersion": "0.6.4",
   "areas": [
     {
       "id": "farmingdale-ny",
@@ -702,14 +702,16 @@
       "icao": "",
       "cat": "hill",
       "noPhotogrammetry": false,
-      "status": "progress",
+      "status": "released",
       "votes": 0,
       "by": "Smoother Roads",
       "lat": 38.8812,
       "lon": -105.0498,
       "radiusKm": 5.2,
       "roadKm": 21.1,
-      "added": "2026-11-23"
+      "added": "2026-11-23",
+      "package": "smoother-roads-pikes-peak-co",
+      "version": "0.6.4"
     },
     {
       "id": "mount-washington-nh",
@@ -719,14 +721,16 @@
       "icao": "",
       "cat": "hill",
       "noPhotogrammetry": false,
-      "status": "progress",
+      "status": "released",
       "votes": 0,
       "by": "Smoother Roads",
       "lat": 44.2797,
       "lon": -71.264,
       "radiusKm": 3.4,
       "roadKm": 12.5,
-      "added": "2026-11-23"
+      "added": "2026-11-23",
+      "package": "smoother-roads-mount-washington-nh",
+      "version": "0.6.4"
     },
     {
       "id": "mount-vesuvius-italy",
@@ -736,14 +740,16 @@
       "icao": "",
       "cat": "hill",
       "noPhotogrammetry": false,
-      "status": "progress",
+      "status": "released",
       "votes": 0,
       "by": "Smoother Roads",
       "lat": 40.821,
       "lon": 14.405,
       "radiusKm": 4.6,
       "roadKm": 11.8,
-      "added": "2026-11-23"
+      "added": "2026-11-23",
+      "package": "smoother-roads-mount-vesuvius-italy",
+      "version": "0.6.4"
     }
   ]
 }
