@@ -13,8 +13,9 @@ import { RequestIntro } from "./components/RequestIntro";
 import { WhatsNew } from "./components/WhatsNew";
 import { Visitors } from "./components/Visitors";
 import { VotePage } from "./components/VotePage";
-import { Sidebar, VoteLink } from "./components/Sidebar";
-import { areaFromPath, isVotePath, syncPath, syncVote } from "./lib/slug";
+import { ClimbsPage } from "./components/ClimbsPage";
+import { BoardsLink, Sidebar, VoteLink } from "./components/Sidebar";
+import { areaFromPath, isBoardsPath, isVotePath, syncBoards, syncPath, syncVote } from "./lib/slug";
 import { useStore } from "./lib/store";
 
 export function App() {
@@ -28,6 +29,7 @@ export function App() {
   // "More info": the open area as a full page over the map area
   const full = useStore((s) => s.full && s.panel === "detail" && !!s.selectedId);
   const votePage = useStore((s) => s.votePage);
+  const boardsPage = useStore((s) => s.boardsPage);
 
   useEffect(() => {
     const { init } = useStore.getState();
@@ -41,6 +43,7 @@ export function App() {
         const { areas, openDetail } = useStore.getState();
         const area = areaFromPath(areas) ?? areas.find((a) => a.id === id);
         if (isVotePath()) useStore.getState().patch({ votePage: true }); // /smoother-roads/vote
+        else if (isBoardsPath()) useStore.getState().patch({ boardsPage: true }); // /smoother-roads/leaderboards
         else if (area) openDetail(area.id);
         else syncPath(undefined, areas, false);
       });
@@ -51,6 +54,9 @@ export function App() {
   useEffect(() => {
     const unsub = useStore.subscribe((s, prev) => {
       if (!s.areas.length) return;
+      // the Leaderboards page has its own address; leaving it for the Vote page or an area goes to that address
+      if (s.boardsPage !== prev.boardsPage && (s.boardsPage || (!s.selectedId && !s.votePage))) syncBoards(s.boardsPage, true);
+      if (s.boardsPage) return;
       // the Vote page has its own address; leaving it for an area goes to that area's address
       if (s.votePage !== prev.votePage && (s.votePage || !s.selectedId)) syncVote(s.votePage, true);
       if (s.votePage || (s.selectedId === prev.selectedId && s.votePage === prev.votePage)) return;
@@ -60,6 +66,8 @@ export function App() {
     const onPop = () => {
       const s = useStore.getState();
       const area = areaFromPath(s.areas);
+      if (isBoardsPath() !== s.boardsPage) s.patch({ boardsPage: isBoardsPath(), ...(isBoardsPath() ? { votePage: false } : {}) });
+      if (isBoardsPath()) return;
       if (isVotePath() !== s.votePage) s.patch({ votePage: isVotePath() });
       if (isVotePath()) return;
       if (area && area.id !== s.selectedId) s.openDetail(area.id);
@@ -80,6 +88,7 @@ export function App() {
       else if (s.pinMode) s.patch({ pinMode: false });
       else if (s.routeMode) s.patch({ routeMode: false });
       else if (s.poiPick) s.patch({ poiPick: false });
+      else if (s.boardsPage) s.patch({ boardsPage: false });
       else if (s.votePage) s.patch({ votePage: false });
       else if (s.full && s.panel === "detail") s.patch({ full: false });
       else if (s.panel) s.closePanel();
@@ -99,10 +108,12 @@ export function App() {
               <MapView />
               {full && <AreaPage />}
               {votePage && <VotePage />}
+              {boardsPage && <ClimbsPage />}
               {/* top left of the map: the road coverage card, and the vote button under it at the same width */}
               <div className="map-tl">
                 <Legend />
                 {CONFIG.votes && <VoteLink float />}
+                {CONFIG.climbBoards && <BoardsLink float />}
               </div>
               <Panel />
               <MapHint />

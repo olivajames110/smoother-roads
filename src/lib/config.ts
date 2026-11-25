@@ -9,6 +9,9 @@ export const CONFIG = {
   // The Vote page: the day voting ends, as "2026-12-31" (the last day votes count, UTC), or "" while no
   // date is set. The page shows it either way; after that day the vote buttons are switched off.
   voteEnds: "",
+  // The Leaderboards page (hill climb times from Street GPS; needs supabase/028_climb_times.sql). Until that SQL
+  // has run the page says the leaderboards aren't open yet.
+  climbBoards: true,
   // Comments and feedback
   database: true,
   // Screenshot uploads on comments: turn on once approval is built

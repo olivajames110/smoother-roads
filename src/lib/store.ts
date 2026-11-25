@@ -4,7 +4,7 @@ import { addComment, amAdmin, editReview, fetchMyReviews } from "./comments";
 import { loadAreas, saveLocal, sendRequest, sendSpot } from "./data";
 import { fetchLineIndex, fetchLines } from "./lines";
 import { logVisit } from "./visits";
-import { isVotePath } from "./slug";
+import { isBoardsPath, isVotePath } from "./slug";
 import { reorderPhotos, uploadPhoto } from "./photos";
 import { addRequest } from "./requests";
 import { setVote } from "./votes";
@@ -123,6 +123,7 @@ interface Store {
   hoveredId: string | null;
   panel: PanelMode;
   votePage: boolean; // The "Vote" page over the map area: requested and in-progress areas by votes
+  boardsPage: boolean; // The "Leaderboards" page over the map area: hill climb times (never open with votePage)
   onlyHill: boolean; // The "Hill climbs" chip: list and map show hill climbs only
   full: boolean; // "More info": the open area as a full page over the map area, the map beside it
   draft: Draft;
@@ -256,6 +257,7 @@ export const useStore = create<Store>((set, get) => {
     panel: null,
     full: false,
     votePage: isVotePath(), // a direct visit to /vote opens the vote page at once (no flash of the map)
+    boardsPage: isBoardsPath(), // the same for /leaderboards
     onlyHill: false,
     draft: newDraft(),
     form: newForm(),
@@ -401,6 +403,7 @@ export const useStore = create<Store>((set, get) => {
       set({
         view: "map",
         votePage: false,
+        boardsPage: false,
         panel: "detail",
         selectedId: id,
         pinMode: false,
@@ -604,6 +607,7 @@ export const useStore = create<Store>((set, get) => {
       set({
         view: "map",
         votePage: false,
+        boardsPage: false,
         panel: "submit",
         full: false,
         selectedId: null,

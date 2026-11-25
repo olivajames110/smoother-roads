@@ -64,6 +64,19 @@ export function syncVote(on: boolean, push: boolean) {
   else history.replaceState(null, "", url);
 }
 
+// The Leaderboards page (hill climb times) has its own address: /smoother-roads/leaderboards
+export const BOARDS_PATH = "leaderboards";
+export const isBoardsPath = () =>
+  location.pathname.startsWith(BASE) && location.pathname.slice(BASE.length).replace(/\/+$/, "").toLowerCase() === BOARDS_PATH;
+
+// Point the address bar at the Leaderboards page, or back at the home page
+export function syncBoards(on: boolean, push: boolean) {
+  const url = BASE + (on ? BOARDS_PATH : "") + location.search + location.hash;
+  if (url === location.pathname + location.search + location.hash) return;
+  if (push) history.pushState(null, "", url);
+  else history.replaceState(null, "", url);
+}
+
 // Point the address bar at the open area (or the home page), keeping the query (?demo, ?area)
 export function syncPath(area: Area | undefined, areas: Area[], push: boolean) {
   const path = BASE + (area ? areaSlug(area, areas) : "");

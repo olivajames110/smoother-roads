@@ -16,7 +16,7 @@ export function VoteLink({ float }: { float?: boolean }) {
   return (
     <button
       className={"vote-link" + (float ? " vote-float" : "") + (votePage ? " on" : "")}
-      onClick={() => patch({ votePage: !votePage, sidebarOpen: false })}
+      onClick={() => patch({ votePage: !votePage, boardsPage: false, sidebarOpen: false })}
     >
       <span className="gl-ico">
         <Icon name="up" size={15} weight={2.2} />
@@ -24,6 +24,27 @@ export function VoteLink({ float }: { float?: boolean }) {
       <span className="vl-text">
         <b>Vote for what's next</b>
         <span>Cast 3 votes each day for what you want worked on.</span>
+      </span>
+      <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
+    </button>
+  );
+}
+
+// Opens the Leaderboards page (hill climb times). Sits under the Vote button in both places.
+export function BoardsLink({ float }: { float?: boolean }) {
+  const boardsPage = useStore((s) => s.boardsPage);
+  const patch = useStore((s) => s.patch);
+  return (
+    <button
+      className={"vote-link boards-link" + (float ? " vote-float" : "") + (boardsPage ? " on" : "")}
+      onClick={() => patch({ boardsPage: !boardsPage, votePage: false, sidebarOpen: false })}
+    >
+      <span className="gl-ico">
+        <Icon d='<path d="M1.5 20.5 9 6l4.2 7.4L15.8 9l6.7 11.5z" fill="currentColor" stroke-linejoin="round"/>' size={15} />
+      </span>
+      <span className="vl-text">
+        <b>Hill Climb leaderboards</b>
+        <span>The fastest timed runs to the top.</span>
       </span>
       <Icon d='<path d="m9 6 6 6-6 6"/>' size={15} weight={2.4} />
     </button>
@@ -102,6 +123,7 @@ export function Sidebar() {
           )}
           {/* narrow screens only: on wide ones the button floats on the map (App.tsx) */}
           {CONFIG.votes && <VoteLink />}
+          {CONFIG.climbBoards && <BoardsLink />}
           <div className="search-add">
             <SearchInput placeholder="Search city, region or country" />
             <HoverTip className="ibtn-tip" tip="Request an area (or right-click the map)" place="below">
