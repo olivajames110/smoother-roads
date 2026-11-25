@@ -1136,6 +1136,10 @@ tbody tr:hover{background:var(--soft)}
 .cb-card-h h2{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em}
 .cb-card-h .grow span{font-size:12.5px;color:var(--mut)}
 .cb-vehicle{width:auto;max-width:220px;height:32px;padding:0 8px;font-size:13px}
+.cb-levels{display:inline-flex;gap:2px;margin-bottom:8px;padding:3px;border-radius:10px;background:var(--soft)}
+.cb-level{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--mut);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.cb-level:hover{color:var(--text)}
+.cb-level.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .cb-empty{padding:34px 12px;text-align:center;color:var(--mut);font-size:14px}
 .cb-empty b{color:var(--text)}
 .cb-table{font-variant-numeric:tabular-nums}

@@ -1,14 +1,17 @@
 import { sb } from "./supabase";
 
-// Hill Climb leaderboards (028_climb_times.sql). Street GPS times a run up a hill climb and submits it; the site
-// only reads the boards (and lets the admin remove an entry).
+// Hill Climb leaderboards (028_climb_times.sql, 029_climb_levels.sql). Street GPS times a run up a hill climb and
+// submits it; the site only reads the boards (and lets the admin remove an entry).
+
+// Race levels: where a timed run starts. Each has its own board. The index is the database's "stage".
+export const LEVELS = ["Full climb", "From 1/4", "From 1/2", "From 3/4"] as const;
 
 export interface ClimbTime {
   pos: number;
   id: string;
   name: string; // the driver name typed in Street GPS
   ms: number;
-  splits: number[]; // at 1/4, 1/2 and 3/4 of the road
+  splits: number[]; // at the quarter marks after the start: 3 for the full climb, none from 3/4
   vehicle: string;
   date: number;
 }
@@ -28,8 +31,8 @@ interface Row {
   at: string;
 }
 
-export async function fetchClimbBoard(climbId: string): Promise<ClimbBoard> {
-  const { data, error } = await sb.rpc("climb_board", { p_climb: climbId, p_limit: 200 });
+export async function fetchClimbBoard(climbId: string, stage: number): Promise<ClimbBoard> {
+  const { data, error } = await sb.rpc("climb_board", { p_climb: climbId, p_stage: stage, p_limit: 200 });
   if (error) return { ready: false, times: [] };
   return {
     ready: true,

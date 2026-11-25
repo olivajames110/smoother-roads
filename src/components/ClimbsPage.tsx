@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchClimbBoard, fmtRun, removeClimbTime, type ClimbBoard } from "../lib/climbs";
+import { fetchClimbBoard, fmtRun, LEVELS, removeClimbTime, type ClimbBoard } from "../lib/climbs";
 import { CONFIG } from "../lib/config";
 import { fmtDate } from "../lib/format";
 import { useStore } from "../lib/store";
@@ -9,7 +9,8 @@ const ALL = "All vehicles";
 const HILL = '<path d="M1.5 20.5 9 6l4.2 7.4L15.8 9l6.7 11.5z" fill="currentColor" stroke-linejoin="round"/>';
 
 // The Leaderboards page (covers the map area; /smoother-roads/leaderboards): the best timed runs on each released
-// hill climb, as Street GPS submits them (028_climb_times.sql). One climb at a time, picked with the chips.
+// hill climb, as Street GPS submits them (028_climb_times.sql). One climb and one race level (where the run starts)
+// at a time.
 export function ClimbsPage() {
   const areas = useStore((s) => s.areas);
   const loaded = useStore((s) => s.loaded);
@@ -24,6 +25,7 @@ export function ClimbsPage() {
   const [pick, setPick] = useState<string | null>(null);
   const climb = climbs.find((c) => c.id === pick) ?? climbs[0];
   const [board, setBoard] = useState<ClimbBoard | null>(null);
+  const [stage, setStage] = useState(0); // the race level: 0 full climb, 1-3 from 1/4, 1/2, 3/4
   const [vehicle, setVehicle] = useState(ALL);
   const [tick, setTick] = useState(0); // reloads the board (after the admin removes an entry)
 
@@ -31,16 +33,16 @@ export function ClimbsPage() {
     if (!climb) return;
     let live = true;
     setBoard(null);
-    fetchClimbBoard(climb.id).then(
+    fetchClimbBoard(climb.id, stage).then(
       (b) => live && setBoard(b),
       () => live && setBoard({ ready: false, times: [] }),
     );
     return () => {
       live = false;
     };
-  }, [climb?.id, tick]);
+  }, [climb?.id, stage, tick]);
 
-  useEffect(() => setVehicle(ALL), [climb?.id]);
+  useEffect(() => setVehicle(ALL), [climb?.id, stage]);
 
   const vehicles = useMemo(() => {
     const seen = new Map<string, string>();
@@ -74,8 +76,8 @@ export function ClimbsPage() {
           <div className="grow">
             <h1>Hill Climb leaderboards</h1>
             <p>
-              The fastest timed runs from the bottom to the top. To set a time: open Street GPS in the sim, go to Climbs, press
-              Start climb, drive to the top, then press Submit time.
+              The fastest timed runs to the top, from the base or from 1/4, 1/2 or 3/4 of the way up. To set a time: open
+              Street GPS in the sim, go to Climbs, start a timed run, drive to the top, then press Submit time.
             </p>
           </div>
         </header>
@@ -111,7 +113,7 @@ export function ClimbsPage() {
                   <h2>{climb.name}</h2>
                   <span>
                     {climb.region}
-                    {climb.roadKm ? " · " + climb.roadKm.toFixed(1) + " km" : ""}
+                    {climb.roadKm ? " · " + ((climb.roadKm * (4 - stage)) / 4).toFixed(1) + " km" : ""}
                     {board?.ready ? " · " + board.times.length + (board.times.length === 1 ? " time" : " times") : ""}
                   </span>
                 </div>
@@ -128,6 +130,14 @@ export function ClimbsPage() {
                 </button>
               </div>
 
+              <div className="cb-levels" role="tablist" aria-label="Race level">
+                {LEVELS.map((name, i) => (
+                  <button key={name} role="tab" aria-selected={i === stage} className={"cb-level" + (i === stage ? " on" : "")} onClick={() => setStage(i)}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+
               {!board && (
                 <div className="vp-loading">
                   <span className="vp-spin" />
@@ -137,7 +147,7 @@ export function ClimbsPage() {
               {board && !board.ready && <div className="cb-empty">The leaderboards aren't open yet. Check back soon.</div>}
               {board?.ready && rows.length === 0 && (
                 <div className="cb-empty">
-                  <b>No times yet.</b> Be the first: drive it with Street GPS and press Submit time.
+                  <b>No times yet at this level.</b> Be the first: drive it with Street GPS and press Submit time.
                 </div>
               )}
               {board?.ready && rows.length > 0 && (
@@ -162,7 +172,8 @@ export function ClimbsPage() {
                       <span className="cb-gap">{t.pos === 1 || best == null ? "" : "+" + fmtRun(t.ms - best)}</span>
                       {[0, 1, 2].map((k) => (
                         <span key={k} className="cb-split">
-                          {t.splits[k] != null ? fmtRun(t.splits[k]) : ""}
+                          {/* a run from 1/2 has only the 3/4 split: it sits in the last column */}
+                          {k >= stage && t.splits[k - stage] != null ? fmtRun(t.splits[k - stage]) : ""}
                         </span>
                       ))}
                       <span className="cb-veh">{t.vehicle}</span>
@@ -188,8 +199,8 @@ export function ClimbsPage() {
             </section>
 
             <p className="cb-note">
-              A run counts when the whole road is driven from the base: slew mode, teleporting, a changed simulation rate or a
-              skipped part of the road void it. One best time is kept per driver and vehicle. Times are for fun and are not verified.
+              A run counts when the whole road is driven from its start point: slew mode, teleporting, a changed simulation rate or a
+              skipped part of the road void it. One best time is kept per driver, vehicle and level. Times are for fun and are not verified.
             </p>
           </>
         )}
