@@ -1,15 +1,18 @@
+import { useEffect, useState } from "react";
 import logoFull from "../assets/logo-full.png";
 import logo from "../assets/logo.jpg";
 import { CONFIG } from "../lib/config";
 import { useStore } from "../lib/store";
+import { VOTES_LEFT_EVENT, votesLeftToday } from "../lib/workVotes";
 import { AreaList } from "./AreaList";
+import { DownloadMenu } from "./DownloadMenu";
 import { HelpMenu } from "./HelpMenu";
 import { HoverTip } from "./HoverTip";
 import { Icon } from "./Icon";
 import { SearchInput } from "./SearchInput";
 
-// Opens the Vote page. Floats on the map under the road coverage card (wide screens), and sits in the
-// sidebar on narrow ones
+// Opens the Vote page. Floats on the map under the road coverage card while the sidebar is collapsed (wide
+// screens); otherwise the sidebar's Map / Vote / Leaderboards switch does this
 export function VoteLink({ float }: { float?: boolean }) {
   const votePage = useStore((s) => s.votePage);
   const patch = useStore((s) => s.patch);
@@ -30,7 +33,7 @@ export function VoteLink({ float }: { float?: boolean }) {
   );
 }
 
-// Opens the Leaderboards page (hill climb times). Sits under the Vote button in both places.
+// Opens the Leaderboards page (hill climb times). Sits under the floating Vote button.
 export function BoardsLink({ float }: { float?: boolean }) {
   const boardsPage = useStore((s) => s.boardsPage);
   const patch = useStore((s) => s.patch);
@@ -58,6 +61,21 @@ export function Sidebar() {
   const beginRequest = useStore((s) => s.beginRequest);
   const collapsed = useStore((s) => s.sidebarCollapsed);
   const patch = useStore((s) => s.patch);
+  const votePage = useStore((s) => s.votePage);
+  const boardsPage = useStore((s) => s.boardsPage);
+  // votes left today, on the Vote tab: asked once, then kept current by the Vote page as votes are cast
+  const [left, setLeft] = useState(0);
+  useEffect(() => {
+    if (!CONFIG.votes) return;
+    let live = true;
+    votesLeftToday().then((n) => live && setLeft(n));
+    const on = (e: Event) => setLeft((e as CustomEvent<number>).detail);
+    window.addEventListener(VOTES_LEFT_EVENT, on);
+    return () => {
+      live = false;
+      window.removeEventListener(VOTES_LEFT_EVENT, on);
+    };
+  }, []);
 
   return (
     <aside className="sidebar">
@@ -74,6 +92,7 @@ export function Sidebar() {
               <span className="wm-2">Roads</span>
             </div>
             <div className="sb-actions">
+              <DownloadMenu />
               <HelpMenu />
               <HoverTip
                 className="ibtn-tip sb-toggle"
@@ -91,39 +110,39 @@ export function Sidebar() {
               </HoverTip>
             </div>
           </div>
-          {(CONFIG.downloadUrl || CONFIG.gpsUrl) && (
-            <div className="get-links">
-              <div className="get-row">
-                {CONFIG.downloadUrl && (
-                  <a className="get-link" href={CONFIG.downloadUrl} target="_blank" rel="noopener"
-                     title="Smoother Roads on flightsim.to">
-                    <span className="gl-ico">
-                      <Icon d='<path d="M4 21 9 3M20 21 15 3M12 5v2.5M12 10.5V13M12 16v3"/>' size={15} weight={2.2} />
-                    </span>
-                    <span className="gl-name">Smoother Roads</span>
-                    <span className="gl-dl">
-                      <Icon d='<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>' size={14} weight={2.2} />
-                    </span>
-                  </a>
-                )}
-                {CONFIG.gpsUrl && (
-                  <a className="get-link" href={CONFIG.gpsUrl} target="_blank" rel="noopener"
-                     title="Street GPS on flightsim.to">
-                    <span className="gl-ico">
-                      <Icon d='<path d="M3 11 21 3l-8 18-2-8z"/>' size={15} weight={2.2} />
-                    </span>
-                    <span className="gl-name">Street GPS</span>
-                    <span className="gl-dl">
-                      <Icon d='<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>' size={14} weight={2.2} />
-                    </span>
-                  </a>
-                )}
-              </div>
-            </div>
+          {/* Map / Vote / Leaderboards: the two pages open over the map area */}
+          {(CONFIG.votes || CONFIG.climbBoards) && (
+            <nav className="seg full page-seg" aria-label="Pages">
+              <button
+                className={!votePage && !boardsPage ? "on" : ""}
+                onClick={() => patch({ votePage: false, boardsPage: false, sidebarOpen: false })}
+              >
+                <Icon d='<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>' size={15} />
+                Map
+              </button>
+              {CONFIG.votes && (
+                <button
+                  className={votePage ? "on" : ""}
+                  title={left ? `Vote for what's next: ${left} vote${left === 1 ? "" : "s"} left today` : "Vote for what's next"}
+                  onClick={() => patch({ votePage: true, boardsPage: false, sidebarOpen: false })}
+                >
+                  <Icon name="up" size={15} weight={2.2} />
+                  Vote
+                  {left > 0 && <span className="seg-n">{left}</span>}
+                </button>
+              )}
+              {CONFIG.climbBoards && (
+                <button
+                  className={boardsPage ? "on" : ""}
+                  title="Hill Climb leaderboards"
+                  onClick={() => patch({ boardsPage: true, votePage: false, sidebarOpen: false })}
+                >
+                  <Icon d='<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 6h3v2a3 3 0 0 1-3 3M7 6H4v2a3 3 0 0 0 3 3"/>' size={15} />
+                  Leaderboards
+                </button>
+              )}
+            </nav>
           )}
-          {/* narrow screens only: on wide ones the button floats on the map (App.tsx) */}
-          {CONFIG.votes && <VoteLink />}
-          {CONFIG.climbBoards && <BoardsLink />}
           <div className="search-add">
             <SearchInput placeholder="Search city, region or country" />
             <HoverTip className="ibtn-tip" tip="Request an area (or right-click the map)" place="below">

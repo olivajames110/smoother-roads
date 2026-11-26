@@ -11,6 +11,9 @@ export interface WorkVotes {
   today: Map<string, number>; // this browser's votes today, per area
 }
 
+// Sent on window (detail = votes left today) whenever the Vote page's count changes: the sidebar's Vote tab shows it
+export const VOTES_LEFT_EVENT = "sr-votes-left";
+
 // Today as the database counts it (UTC), e.g. "2026-11-23"
 const utcDay = () => new Date().toISOString().slice(0, 10);
 
@@ -34,6 +37,15 @@ export async function fetchWorkVotes(): Promise<WorkVotes> {
     }
   }
   return out;
+}
+
+// How many of today's votes this browser still has (all of them for a new visitor; 0 while voting isn't open)
+export async function votesLeftToday(): Promise<number> {
+  const { data: session } = await sb.auth.getSession();
+  if (!session.session) return DAILY_VOTES;
+  const { count, error } = await sb.from("work_votes").select("area_id", { count: "exact", head: true }).eq("day", utcDay());
+  if (error) return 0;
+  return Math.max(0, DAILY_VOTES - (count ?? 0));
 }
 
 // One more vote for the area. Throws with code "23505" when the database still allows one per area a day.

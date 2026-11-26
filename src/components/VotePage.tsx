@@ -7,7 +7,7 @@ import { coverageMi2, coverageShort } from "../lib/geo";
 import { CATS, STATUS, statusLabel, statusNote } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, Status } from "../lib/types";
-import { addWorkVote, DAILY_VOTES, fetchWorkVotes, takeBackWorkVote, type WorkVotes } from "../lib/workVotes";
+import { addWorkVote, DAILY_VOTES, fetchWorkVotes, takeBackWorkVote, VOTES_LEFT_EVENT, type WorkVotes } from "../lib/workVotes";
 import { Icon } from "./Icon";
 import { formatNotes } from "./LinkedText";
 import { MiniMap } from "./MiniMap";
@@ -248,6 +248,11 @@ export function VotePage() {
   const loaded = useStore((s) => s.loaded);
   const used = [...(data?.today.values() ?? [])].reduce((n, v) => n + v, 0);
   const left = Math.max(0, DAILY_VOTES - used);
+  const votingOpen = !!data?.ready;
+  // the sidebar's Vote tab shows the votes left
+  useEffect(() => {
+    if (votingOpen) window.dispatchEvent(new CustomEvent(VOTES_LEFT_EVENT, { detail: left }));
+  }, [left, votingOpen]);
   // shown right away, undone if the database refuses it
   const bump = (id: string, by: 1 | -1) =>
     setData((d) => {

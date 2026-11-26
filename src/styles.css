@@ -37,6 +37,11 @@ svg{flex:none}
 .seg button.on{background:var(--surface);color:var(--tx);box-shadow:0 1px 2px rgba(16,24,40,.08),0 0 0 1px var(--line)}
 .seg.full{display:flex;width:100%}
 .seg.full button{flex:1;justify-content:center}
+/* Map / Vote / Leaderboards at the top of the sidebar; the Vote tab carries the votes left today */
+.page-seg button{flex:1 1 auto;padding:8px 9px;white-space:nowrap}
+.page-seg button svg{flex:none}
+.page-seg button.on svg{color:var(--accent)}
+.seg-n{flex:none;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;line-height:17px;text-align:center;font-variant-numeric:tabular-nums}
 .search{position:relative}
 .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
 .search .input{padding-left:36px}
@@ -864,7 +869,10 @@ tbody tr:hover{background:var(--soft)}
 .help-ico{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px}
 .help-ico.new{background:#efe9fe}
 .help-ico.new svg{color:#6d28d9}
-.help-ico.req{background:var(--accent-soft)}
+.help-ico.req,.help-ico.dl{background:var(--accent-soft)}
+.help-ico.dl svg{color:var(--accent)}
+.dl-pop{width:290px}
+.dl-pop .pop-item>svg:last-child{margin-left:auto;color:var(--faint)}
 .help-ico.req svg{color:var(--accent)}
 .help-t{display:flex;flex-direction:column;min-width:0}
 .help-t b{font-size:13.5px;font-weight:600}
@@ -1112,8 +1120,9 @@ tbody tr:hover{background:var(--soft)}
 .badge.no-pg-b{color:#a16207;background:#fef9c3}
 .badge.no-pg-b::before{display:none}
 
-/* The vote button floats on the map under the road coverage card; on narrow screens it sits in the sidebar */
-.sidebar .vote-link{display:none}
+/* The vote and leaderboards buttons float on the map under the road coverage card only while the sidebar is
+   collapsed; otherwise the sidebar's Map / Vote / Leaderboards switch opens those pages */
+.map-view:not(.sb-collapsed) .vote-float{display:none}
 .map-tl{position:absolute;left:14px;top:14px;z-index:1000;display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:calc(100% - 28px);pointer-events:none}
 .map-tl>*{pointer-events:auto}
 .map-tl .legend{position:static}
@@ -1123,11 +1132,9 @@ tbody tr:hover{background:var(--soft)}
 .map-wrap.full>.vote-float{display:none}
 @container app (max-width: 860px){
   .vote-float{display:none}
-  .sidebar .vote-link{display:flex}
 }
 
 /* Leaderboards page (hill climb times): the Vote page's shell, one climb at a time */
-.sidebar .boards-link{margin-top:8px}
 .cb-content{max-width:1100px}
 .cb-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .cb-tab{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--text);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
