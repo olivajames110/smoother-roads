@@ -1057,6 +1057,11 @@ tbody tr:hover{background:var(--soft)}
 .vp-vote:hover{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-h)}
 .vp-vote.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .vp-vote.on svg{fill:currentColor}
+/* the vote button with, once voted today, a small "take one back" button showing this browser's votes */
+.vp-votes{flex:none;display:inline-flex;align-items:center;gap:6px}
+.vp-back{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:3px;height:36px;padding:0 9px;border:1px solid var(--accent-line);border-radius:10px;background:var(--surface);color:var(--accent-h);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;transition:background .15s,border-color .15s}
+.vp-back:hover{background:var(--accent-soft);border-color:var(--accent)}
+.vp-back:disabled{opacity:.5;cursor:not-allowed}
 @container app (max-width: 1500px){ .vp-cols{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @container app (max-width: 1150px){ .vp-cols{grid-template-columns:1fr} }
 @container app (max-width: 860px){

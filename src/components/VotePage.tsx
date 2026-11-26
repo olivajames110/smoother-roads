@@ -7,15 +7,16 @@ import { coverageMi2, coverageShort } from "../lib/geo";
 import { CATS, STATUS, statusLabel, statusNote } from "../lib/icons";
 import { useStore } from "../lib/store";
 import type { Area, Status } from "../lib/types";
-import { DAILY_VOTES, fetchWorkVotes, setWorkVote, type WorkVotes } from "../lib/workVotes";
+import { addWorkVote, DAILY_VOTES, fetchWorkVotes, takeBackWorkVote, type WorkVotes } from "../lib/workVotes";
 import { Icon } from "./Icon";
 import { formatNotes } from "./LinkedText";
 import { MiniMap } from "./MiniMap";
 
 interface Votes {
   of: (id: string) => number;
-  mine: (id: string) => boolean; // voted for today
-  toggle: (id: string) => void;
+  mine: (id: string) => number; // this browser's votes for it today
+  add: (id: string) => void; // one more vote
+  back: (id: string) => void; // take one of today's votes back
   open: boolean; // voting is open (the database table exists)
   left: number; // votes left today
   show: (id: string) => void; // open the location's card
@@ -42,30 +43,44 @@ const COLUMNS: { status: Status; title: string }[] = [
   { status: "released", title: "Improve this location" },
 ];
 
-// The vote button: the location's votes; pressed when this browser voted for it today
+// The vote button: the location's votes; every click adds one of today's votes (several can go to the same
+// location). Once this browser voted for it today, a small button beside it takes one vote back.
 function VoteButton({ area: a, votes, wide }: { area: Area; votes: Votes; wide?: boolean }) {
-  const voted = votes.mine(a.id);
-  const blocked = !votes.open || (!voted && votes.left === 0);
+  const mine = votes.mine(a.id);
+  const blocked = !votes.open || votes.left === 0;
   return (
-    <button
-      className={"vp-vote" + (voted ? " on" : "") + (wide ? " wide" : "")}
-      aria-pressed={voted}
-      disabled={blocked}
-      title={
-        !votes.open
-          ? "Voting isn't open yet"
-          : voted
-            ? "Take today's vote back"
+    <span className="vp-votes">
+      {mine > 0 && (
+        <button
+          className="vp-back"
+          disabled={!votes.open}
+          title={mine > 1 ? `Take one of your ${mine} votes back` : "Take your vote back"}
+          aria-label={mine > 1 ? `Take one of your ${mine} votes back` : "Take your vote back"}
+          onClick={() => votes.back(a.id)}
+        >
+          <Icon d='<path d="M5 12h14"/>' size={13} weight={2.6} />
+          {mine}
+        </button>
+      )}
+      <button
+        className={"vp-vote" + (mine ? " on" : "") + (wide ? " wide" : "")}
+        disabled={blocked}
+        title={
+          !votes.open
+            ? "Voting isn't open yet"
             : votes.left === 0
               ? "No votes left today"
-              : "Vote for this location"
-      }
-      onClick={() => votes.toggle(a.id)}
-    >
-      <Icon name="up" size={14} weight={2.2} />
-      {fmtN(votes.of(a.id))}
-      {wide && <span>{voted ? "Voted today" : votes.of(a.id) === 1 ? "vote" : "votes"}</span>}
-    </button>
+              : mine
+                ? "Vote for this location again"
+                : "Vote for this location"
+        }
+        onClick={() => votes.add(a.id)}
+      >
+        <Icon name="up" size={14} weight={2.2} />
+        {fmtN(votes.of(a.id))}
+        {wide && <span>{votes.of(a.id) === 1 ? "vote" : "votes"}</span>}
+      </button>
+    </span>
   );
 }
 
@@ -205,7 +220,8 @@ function Column({ status, title, areas, votes }: { status: Status; title: string
 
 // The Vote page (covers the map area; /smoother-roads/vote). Three columns, each by votes: requested areas (add it),
 // areas in progress (keep working on it), released areas (improve it). These votes are their own count
-// (027_work_votes.sql), apart from an area's upvotes: 3 a day, one per area per day, today's can be taken back.
+// (027_work_votes.sql), apart from an area's upvotes: 3 a day, several can go to the same area
+// (030_work_votes_multiple.sql), today's can be taken back one at a time.
 export function VotePage() {
   const areas = useStore((s) => s.areas);
   const patch = useStore((s) => s.patch);
@@ -216,13 +232,13 @@ export function VotePage() {
   const [data, setData] = useState<WorkVotes | null>(null);
   const [shownId, setShownId] = useState<string | null>(null);
   const shown = areas.find((a) => a.id === shownId);
-  const busy = useRef(new Set<string>());
+  const queue = useRef<Promise<unknown>>(Promise.resolve()); // votes are saved one after the other
 
   useEffect(() => {
     let live = true;
     fetchWorkVotes().then(
       (d) => live && setData(d),
-      () => live && setData({ ready: false, counts: new Map(), today: new Set() }),
+      () => live && setData({ ready: false, counts: new Map(), today: new Map() }),
     );
     return () => {
       live = false;
@@ -230,40 +246,48 @@ export function VotePage() {
   }, []);
 
   const loaded = useStore((s) => s.loaded);
-  const left = Math.max(0, DAILY_VOTES - (data?.today.size ?? 0));
+  const used = [...(data?.today.values() ?? [])].reduce((n, v) => n + v, 0);
+  const left = Math.max(0, DAILY_VOTES - used);
+  // shown right away, undone if the database refuses it
+  const bump = (id: string, by: 1 | -1) =>
+    setData((d) => {
+      if (!d) return d;
+      const counts = new Map(d.counts);
+      const today = new Map(d.today);
+      counts.set(id, Math.max(0, (counts.get(id) ?? 0) + by));
+      const mine = Math.max(0, (today.get(id) ?? 0) + by);
+      if (mine) today.set(id, mine);
+      else today.delete(id);
+      return { ...d, counts, today };
+    });
+  const change = (id: string, by: 1 | -1) => {
+    bump(id, by);
+    queue.current = queue.current.then(() =>
+      (by === 1 ? addWorkVote(id) : takeBackWorkVote(id)).catch((e: { message?: string; code?: string }) => {
+        bump(id, by === 1 ? -1 : 1);
+        showToast(
+          /daily vote limit/i.test(e?.message ?? "")
+            ? "You've used today's 3 votes. More tomorrow."
+            : e?.code === "23505"
+              ? "More than one vote for a location isn't switched on yet."
+              : "Couldn't save your vote. Please try again.",
+          true,
+        );
+      }),
+    );
+  };
   const end = voteEnd();
   const votes: Votes = {
     open: !!data?.ready && !end.over,
     left,
     show: setShownId,
     of: (id) => data?.counts.get(id) ?? 0,
-    mine: (id) => !!data?.today.has(id),
-    toggle(id) {
-      if (!data?.ready || busy.current.has(id)) return;
-      const on = !data.today.has(id);
-      if (on && left === 0) return;
-      // shown right away, undone if the database refuses it
-      const flip = (d: WorkVotes, to: boolean): WorkVotes => {
-        const counts = new Map(d.counts);
-        const today = new Set(d.today);
-        counts.set(id, Math.max(0, (counts.get(id) ?? 0) + (to ? 1 : -1)));
-        if (to) today.add(id);
-        else today.delete(id);
-        return { ...d, counts, today };
-      };
-      setData((d) => (d ? flip(d, on) : d));
-      busy.current.add(id);
-      setWorkVote(id, on)
-        .catch((e: { message?: string }) => {
-          setData((d) => (d ? flip(d, !on) : d));
-          showToast(
-            /daily vote limit/i.test(e?.message ?? "")
-              ? "You've used today's 3 votes. More tomorrow."
-              : "Couldn't save your vote. Please try again.",
-            true,
-          );
-        })
-        .finally(() => busy.current.delete(id));
+    mine: (id) => data?.today.get(id) ?? 0,
+    add(id) {
+      if (data?.ready && left > 0) change(id, 1);
+    },
+    back(id) {
+      if (data?.ready && (data.today.get(id) ?? 0) > 0) change(id, -1);
     },
   };
 
@@ -296,7 +320,7 @@ export function VotePage() {
         <header className="vp-head">
           <div className="grow">
             <h1>Vote for what's next</h1>
-            <p>Cast up to 3 votes a day for a location you want added or improved.</p>
+            <p>Cast up to 3 votes a day for the locations you want added or improved. You can give one location more than one vote.</p>
             <div className="search vp-search">
               <Icon name="search" size={15} />
               <input
