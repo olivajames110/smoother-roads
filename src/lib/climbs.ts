@@ -48,6 +48,23 @@ export async function fetchClimbBoard(climbId: string, stage: number): Promise<C
   };
 }
 
+// Every completed run on every climb and level, newest first (the "All climbs" landing tab). Reads each board with
+// climb_board; no extra database function needed. pos = the run's place on its own climb + level board.
+export interface ClimbRun extends ClimbTime {
+  climb: string;
+  stage: number;
+}
+
+export async function fetchAllRuns(climbIds: string[]): Promise<{ ready: boolean; runs: ClimbRun[] }> {
+  const jobs = climbIds.flatMap((climb) =>
+    LEVELS.map((_, stage) => fetchClimbBoard(climb, stage).then((b) => ({ climb, stage, b }))),
+  );
+  const boards = await Promise.all(jobs);
+  const runs = boards.flatMap(({ climb, stage, b }) => b.times.map((t) => ({ ...t, climb, stage })));
+  runs.sort((x, y) => y.date - x.date);
+  return { ready: boards.some((x) => x.b.ready), runs };
+}
+
 // Admin only (the database refuses anyone else)
 export async function removeClimbTime(id: string) {
   const { error, count } = await sb.from("climb_times").delete({ count: "exact" }).eq("id", id);

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchClimbBoard, fmtRun, LEVELS, removeClimbTime, type ClimbBoard } from "../lib/climbs";
+import { fetchAllRuns, fetchClimbBoard, fmtRun, LEVELS, removeClimbTime, type ClimbBoard, type ClimbRun } from "../lib/climbs";
 import { CONFIG } from "../lib/config";
 import { fmtDate } from "../lib/format";
 import { useStore } from "../lib/store";
 import { Icon } from "./Icon";
 
 const ALL = "All vehicles";
+const ALL_CLIMBS = "all"; // the landing tab: every completed run on every climb
 const HILL = '<path d="M1.5 20.5 9 6l4.2 7.4L15.8 9l6.7 11.5z" fill="currentColor" stroke-linejoin="round"/>';
 
 // The Leaderboards page (covers the map area; /smoother-roads/leaderboards): the best timed runs on each released
@@ -22,8 +23,9 @@ export function ClimbsPage() {
     () => areas.filter((a) => a.cat === "hill" && a.status === "released" && !a.hidden).sort((x, y) => x.name.localeCompare(y.name)),
     [areas],
   );
-  const [pick, setPick] = useState<string | null>(null);
-  const climb = climbs.find((c) => c.id === pick) ?? climbs[0];
+  const [pick, setPick] = useState<string>(ALL_CLIMBS);
+  const showAll = pick === ALL_CLIMBS;
+  const climb = showAll ? undefined : climbs.find((c) => c.id === pick) ?? climbs[0];
   const [board, setBoard] = useState<ClimbBoard | null>(null);
   const [stage, setStage] = useState(0); // the race level: 0 full climb, 1-3 from 1/4, 1/2, 3/4
   const [vehicle, setVehicle] = useState(ALL);
@@ -88,17 +90,21 @@ export function ClimbsPage() {
             Loading…
           </div>
         )}
-        {loaded && !climb && <div className="vp-closed">No hill climbs are released yet.</div>}
+        {loaded && climbs.length === 0 && <div className="vp-closed">No hill climbs are released yet.</div>}
 
-        {climb && (
+        {climbs.length > 0 && (
           <>
             <div className="cb-tabs" role="tablist" aria-label="Hill climbs">
+              <button role="tab" aria-selected={showAll} className={"cb-tab" + (showAll ? " on" : "")} onClick={() => setPick(ALL_CLIMBS)}>
+                <Icon name="layers" size={14} />
+                All climbs
+              </button>
               {climbs.map((c) => (
                 <button
                   key={c.id}
                   role="tab"
-                  aria-selected={c.id === climb.id}
-                  className={"cb-tab" + (c.id === climb.id ? " on" : "")}
+                  aria-selected={c.id === climb?.id}
+                  className={"cb-tab" + (c.id === climb?.id ? " on" : "")}
                   onClick={() => setPick(c.id)}
                 >
                   <Icon d={HILL} size={14} />
@@ -107,6 +113,22 @@ export function ClimbsPage() {
               ))}
             </div>
 
+            {showAll && (
+              <AllRuns
+                climbs={climbs}
+                admin={admin}
+                onOpen={(id, lvl) => {
+                  setPick(id);
+                  setStage(lvl);
+                }}
+                onRemove={(r, done) => {
+                  if (!confirm("Remove " + r.name + "'s time of " + fmtRun(r.ms) + "?")) return;
+                  adminAction(() => removeClimbTime(r.id), "Time removed").then(done);
+                }}
+              />
+            )}
+
+            {climb && (
             <section className="cb-card">
               <div className="cb-card-h">
                 <div className="grow">
@@ -197,6 +219,7 @@ export function ClimbsPage() {
                 </div>
               )}
             </section>
+            )}
 
             <p className="cb-note">
               A run counts when the whole road is driven from its start point: slew mode, teleporting, a changed simulation rate or a
@@ -206,5 +229,110 @@ export function ClimbsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// The "All climbs" tab: every completed run on every released climb and level, newest first. Clicking a row opens
+// that climb's board at that level.
+function AllRuns({
+  climbs,
+  admin,
+  onOpen,
+  onRemove,
+}: {
+  climbs: { id: string; name: string }[];
+  admin: boolean;
+  onOpen: (climbId: string, stage: number) => void;
+  onRemove: (run: ClimbRun, done: () => void) => void;
+}) {
+  const [data, setData] = useState<{ ready: boolean; runs: ClimbRun[] } | null>(null);
+  const [tick, setTick] = useState(0);
+  const ids = climbs.map((c) => c.id).join(",");
+  const names = useMemo(() => new Map(climbs.map((c) => [c.id, c.name])), [ids]);
+
+  useEffect(() => {
+    let live = true;
+    setData(null);
+    fetchAllRuns(ids.split(",")).then(
+      (d) => live && setData(d),
+      () => live && setData({ ready: false, runs: [] }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [ids, tick]);
+
+  const drivers = useMemo(() => new Set((data?.runs ?? []).map((r) => r.name.toLowerCase())).size, [data]);
+
+  return (
+    <section className="cb-card">
+      <div className="cb-card-h">
+        <div className="grow">
+          <h2>All completed runs</h2>
+          <span>
+            Every hill climb, newest first
+            {data?.ready ? " · " + data.runs.length + (data.runs.length === 1 ? " run" : " runs") + " · " + drivers + (drivers === 1 ? " driver" : " drivers") : ""}
+          </span>
+        </div>
+      </div>
+
+      {!data && (
+        <div className="vp-loading">
+          <span className="vp-spin" />
+          Loading times…
+        </div>
+      )}
+      {data && !data.ready && <div className="cb-empty">The leaderboards aren't open yet. Check back soon.</div>}
+      {data?.ready && data.runs.length === 0 && (
+        <div className="cb-empty">
+          <b>No times yet.</b> Be the first: drive a climb with Street GPS and press Submit time.
+        </div>
+      )}
+      {data?.ready && data.runs.length > 0 && (
+        <div className="cb-table" role="table">
+          <div className="cb-row cb-all cb-head" role="row">
+            <span className="cb-pos">Place</span>
+            <span className="cb-name">Driver</span>
+            <span className="cb-time">Time</span>
+            <span className="cb-climb">Climb</span>
+            <span className="cb-lvl">Level</span>
+            <span className="cb-veh">Vehicle</span>
+            <span className="cb-date">Date</span>
+            {admin && <span className="cb-adm" />}
+          </div>
+          {data.runs.map((r) => (
+            <div
+              key={r.id}
+              className={"cb-row cb-all cb-click" + (r.pos <= 3 ? " top p" + r.pos : "")}
+              role="row"
+              title={"Open the " + (names.get(r.climb) ?? r.climb) + " board"}
+              onClick={() => onOpen(r.climb, r.stage)}
+            >
+              <span className="cb-pos">{r.pos}</span>
+              <span className="cb-name">{r.name}</span>
+              <span className="cb-time">{fmtRun(r.ms)}</span>
+              <span className="cb-climb">{names.get(r.climb) ?? r.climb}</span>
+              <span className="cb-lvl">{LEVELS[r.stage]}</span>
+              <span className="cb-veh">{r.vehicle}</span>
+              <span className="cb-date">{fmtDate(r.date)}</span>
+              {admin && (
+                <span className="cb-adm">
+                  <button
+                    className="link-btn"
+                    title="Remove this time (admin)"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(r, () => setTick((n) => n + 1));
+                    }}
+                  >
+                    Remove
+                  </button>
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
